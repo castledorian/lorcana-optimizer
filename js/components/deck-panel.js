@@ -1,6 +1,6 @@
 // js/components/deck-panel.js
 import { store } from '../store.js';
-import { colorHexMap } from '../i18n.js';
+import Deck from '../core/deck.js';
 
 export function createDeckPanel() {
     const panel = document.createElement('div');
@@ -30,7 +30,6 @@ export function createDeckPanel() {
             `;
         }).join('');
 
-        // Ajouter les événements aux boutons +/-
         deckCardsEl.querySelectorAll('.deck-card-quantity button').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const fullName = btn.dataset.fullname;
@@ -61,15 +60,20 @@ export function createDeckPanel() {
     };
 
     clearBtn.addEventListener('click', () => {
-        store.setDeck(new Deck()); // importé du scope supérieur
+        store.setDeck(new Deck());
         updateUI();
     });
+
+    // Enregistrer l'écouteur sur le store
+    store.on('deck-changed', updateUI);
 
     // Première mise à jour
     updateUI();
 
-    // Réagir aux changements de deck
-    store.on('deck-changed', updateUI);
+    // Méthode de destruction
+    const destroy = () => {
+        store.off('deck-changed', updateUI);
+    };
 
-    return panel;
+    return { element: panel, destroy };
 }
