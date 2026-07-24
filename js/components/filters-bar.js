@@ -5,6 +5,16 @@ import { translations, colorOrder, colorSVGDataURIs, costHexSVG, inkwellSVG } fr
 export function createFiltersBar({ onFilterChange }) {
     const container = document.createElement('div');
     container.className = 'header-filters';
+    // Forcer l'affichage en ligne même si le CSS n'est pas appliqué
+    Object.assign(container.style, {
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: '12px',
+        alignItems: 'flex-end',
+        paddingTop: '8px',
+        borderTop: '1px solid rgba(255,255,255,0.05)'
+    });
 
     // Extension
     const setGroup = document.createElement('div');
@@ -74,7 +84,6 @@ export function createFiltersBar({ onFilterChange }) {
     colorOrder.forEach(color => {
         const btn = document.createElement('div');
         btn.className = 'color-btn';
-        // Utilisation directe du SVG de la couleur, pas de fond hexagonal
         btn.style.backgroundImage = `url(${colorSVGDataURIs[color]})`;
         btn.style.backgroundSize = 'contain';
         btn.style.backgroundRepeat = 'no-repeat';
