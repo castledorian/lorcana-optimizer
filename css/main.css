@@ -159,21 +159,15 @@ body {
 }
 
 /* Boutons icônes */
-.icon-buttons {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    flex-wrap: wrap;
-}
 .color-btn {
-    width: 32px; height: 32px;
-    border: 2px solid var(--border-color);
-    border-radius: 50%;
+    width: 36px; height: 36px;
+    border: 2px solid transparent; /* on gérera l'active */
+    border-radius: 0; /* ou 4px pour un léger arrondi */
     cursor: pointer;
-    background-size: 22px 22px;
+    background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    background-color: var(--surface-color);
+    background-color: transparent;
     transition: all 0.2s ease;
 }
 .color-btn.active {
