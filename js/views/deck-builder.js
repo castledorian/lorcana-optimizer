@@ -38,10 +38,10 @@ export function createDeckBuilderView() {
     mainContainer.className = 'deck-builder-container';
 
     const cardPool = createCardPool();
-    const deckPanel = createDeckPanel();
+    const deckPanel = createDeckPanel(); // retourne { element, destroy }
 
     mainContainer.appendChild(cardPool.element);
-    mainContainer.appendChild(deckPanel);
+    mainContainer.appendChild(deckPanel.element);
     container.appendChild(mainContainer);
 
     const searchInput = cardPool.element.querySelector('input');
@@ -67,8 +67,8 @@ export function createDeckBuilderView() {
     // Nettoyage
     const destroy = () => {
         store.off('data-loaded', onDataLoaded);
-        // Ici on pourrait aussi retirer les listeners du deckPanel si nécessaire,
-        // mais le deckPanel est recréé à chaque fois donc pas de persistance.
+        deckPanel.destroy(); // Important : retire le listener 'deck-changed'
+        // cardPool n'a pas de listener externe à nettoyer
     };
 
     const view = container;
