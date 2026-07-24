@@ -726,44 +726,35 @@
             }
         }
 
-        // ---------- CHARGEMENT DES CARTES (plusieurs proxies) ----------
-        async function fetchCardsData(lang) {
-            const url = `https://lorcanajson.org/files/current/${lang}/allCards.json`;
-            // Essayer d'abord un fetch direct (peut fonctionner si le serveur autorise CORS)
+        // ---------- CHARGEMENT DES CARTES (fichier local, avec fallback proxies) ----------
+        async function fetchCardsData() {
+            // 1. Essayer le fichier local lorcana-data.json
             try {
-                const res = await fetch(url, { mode: 'cors' });
+                const res = await fetch('lorcana-data.json');
                 if (res.ok) return await res.json();
-            } catch (e) {
-                console.warn("Direct fetch failed, trying proxies...");
-            }
+            } catch (e) { /* ignore */ }
 
-            // Liste de proxies CORS (gratuits, fiables)
+            // 2. Fallback : utiliser les proxies (si le fichier local n'existe pas)
+            const url = `https://lorcanajson.org/files/current/fr/allCards.json`;
             const proxies = [
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
                 `https://corsproxy.io/?${encodeURIComponent(url)}`,
                 `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
             ];
-
             for (const proxyUrl of proxies) {
                 try {
                     const res = await fetch(proxyUrl);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && data.cards) return data;
-                    }
-                } catch (e) {
-                    console.warn(`Proxy ${proxyUrl} failed`);
-                }
+                    if (res.ok) return await res.json();
+                } catch (e) { /* ignore */ }
             }
-
-            throw new Error("Impossible de charger les cartes. Tous les proxies CORS ont échoué.");
+            throw new Error("Impossible de charger les cartes.");
         }
 
-        async function loadCards(lang) {
+        async function loadCards() {
             document.getElementById('loading').style.display = 'block';
             document.getElementById('error')?.remove();
             try {
-                const data = await fetchCardsData(lang);
+                const data = await fetchCardsData();
                 allCards = data.cards || [];
                 allSets = data.sets || {};
                 allCards.forEach(card => {
@@ -779,7 +770,7 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('stats').style.display = 'flex';
             } catch (err) {
-                document.getElementById('loading').innerHTML = `<div class="error">Erreur : ${err.message}<br><button onclick="loadCards('${lang}')">Réessayer</button></div>`;
+                document.getElementById('loading').innerHTML = `<div class="error">Erreur : ${err.message}<br><button onclick="loadCards()">Réessayer</button></div>`;
             }
         }
 
@@ -889,7 +880,8 @@
         document.getElementById('language').addEventListener('change', (e) => {
             currentLanguage = e.target.value;
             applyUILanguage(currentLanguage);
-            loadCards(currentLanguage);
+            // Recharge la page pour changer la langue (car les données sont statiques pour une langue)
+            location.reload();
         });
         document.getElementById('prevPage').addEventListener('click', () => {
             if (currentPage > 1) { currentPage--; renderPage(); window.scrollTo(0,0); }
@@ -982,7 +974,7 @@
         // Initialisation
         buildColorButtons();
         applyUILanguage('fr');
-        loadCards('fr');
+        loadCards();
     </script>
 </body>
 </html>
