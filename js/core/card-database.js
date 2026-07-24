@@ -1,4 +1,3 @@
-// js/core/card-database.js
 class CardDatabase {
     constructor() {
         this.cards = [];
@@ -50,6 +49,5 @@ class CardDatabase {
     }
 }
 
-// Singleton (simple, pour l'instant)
 const cardDB = new CardDatabase();
 export default cardDB;
