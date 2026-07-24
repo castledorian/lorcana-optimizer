@@ -1,3 +1,4 @@
+// js/core/card-database.js
 class CardDatabase {
     constructor() {
         this.cards = [];
@@ -7,7 +8,7 @@ class CardDatabase {
     }
 
     async load(language = 'fr') {
-        const response = await fetch(`data/${language}.json`);
+        const response = await fetch(`${language}.json`);
         const data = await response.json();
         this.cards = data.cards;
         this.sets = data.sets;
