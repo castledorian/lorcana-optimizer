@@ -1,3 +1,4 @@
+// js/core/card-database.js (inchangé)
 class CardDatabase {
     constructor() {
         this.cards = [];
