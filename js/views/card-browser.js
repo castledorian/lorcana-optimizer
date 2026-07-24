@@ -48,20 +48,31 @@ export function createCardBrowserView() {
     const filters = createFiltersBar({ onFilterChange: applyFiltersAndRender });
     header.querySelector('.header-container').appendChild(filters);
 
-    // Stats
+    // Stats (avec références internes)
     const statsDiv = document.createElement('div');
     statsDiv.className = 'stats';
+    const totalCardsSpan = document.createElement('span');
+    totalCardsSpan.className = 'stat-value';
+    const displayedCardsSpan = document.createElement('span');
+    displayedCardsSpan.className = 'stat-value';
+    const totalSetsSpan = document.createElement('span');
+    totalSetsSpan.className = 'stat-value';
+
     statsDiv.innerHTML = `
-        <div>Total : <span class="stat-value" id="totalCards">0</span></div>
-        <div>Affichées : <span class="stat-value" id="displayedCards">0</span></div>
-        <div>Extensions : <span class="stat-value" id="totalSets">0</span></div>
+        <div>Total : <span class="stat-value" id="totalCardsVal">0</span></div>
+        <div>Affichées : <span class="stat-value" id="displayedCardsVal">0</span></div>
+        <div>Extensions : <span class="stat-value" id="totalSetsVal">0</span></div>
     `;
+    // Récupérer les spans pour mise à jour sans querySelector
+    const totalCardsEl = statsDiv.querySelector('#totalCardsVal');
+    const displayedCardsEl = statsDiv.querySelector('#displayedCardsVal');
+    const totalSetsEl = statsDiv.querySelector('#totalSetsVal');
     container.appendChild(statsDiv);
 
     // Grille de cartes
     let currentPage = 1;
     const CARDS_PER_PAGE = 48;
-    let uniqueCardList = []; // { representative, variants }
+    let uniqueCardList = [];
     const gridEl = document.createElement('div');
     gridEl.id = 'cardsGrid';
     container.appendChild(gridEl);
@@ -98,8 +109,14 @@ export function createCardBrowserView() {
     function applyFiltersAndRender() {
         if (!store.cardDB.ready) return;
         const cards = store.cardDB.cards;
-        const selectedSet = document.getElementById('set')?.value || 'all';
-        const sortValue = document.getElementById('sort')?.value || 'name-asc';
+
+        // Récupération sécurisée des valeurs de filtre
+        const setSelect = document.getElementById('set');
+        const sortSelect = document.getElementById('sort');
+        if (!setSelect || !sortSelect) return; // sécurité
+
+        const selectedSet = setSelect.value || 'all';
+        const sortValue = sortSelect.value || 'name-asc';
         const [sortField, sortOrder] = sortValue.split('-');
 
         let filtered = cards.slice();
@@ -155,9 +172,10 @@ export function createCardBrowserView() {
         });
         uniqueCardList = Array.from(groups, ([, variants]) => ({ representative: variants[0], variants }));
 
-        document.getElementById('totalCards').textContent = store.cardDB.cards.length;
-        document.getElementById('displayedCards').textContent = uniqueCardList.length;
-        document.getElementById('totalSets').textContent = Object.keys(store.cardDB.sets).length;
+        // Mise à jour des stats avec les références sauvegardées
+        totalCardsEl.textContent = store.cardDB.cards.length;
+        displayedCardsEl.textContent = uniqueCardList.length;
+        totalSetsEl.textContent = Object.keys(store.cardDB.sets).length;
 
         currentPage = 1;
         renderPage();
@@ -184,7 +202,6 @@ export function createCardBrowserView() {
         }));
     }
 
-    // Gestion des événements data-loaded
     const onDataLoaded = () => { applyFiltersAndRender(); };
     if (store.cardDB.ready) {
         applyFiltersAndRender();
@@ -192,16 +209,17 @@ export function createCardBrowserView() {
         store.on('data-loaded', onDataLoaded);
     }
 
-    // Nettoyage complet
     const destroy = () => {
         store.off('data-loaded', onDataLoaded);
-        modal.destroy(); // retire les listeners clavier globaux
+        if (modal && typeof modal.destroy === 'function') {
+            modal.destroy();
+        }
     };
 
     container.init = () => {
         if (store.cardDB.ready) {
-            document.getElementById('totalCards').textContent = store.cardDB.cards.length;
-            document.getElementById('totalSets').textContent = Object.keys(store.cardDB.sets).length;
+            totalCardsEl.textContent = store.cardDB.cards.length;
+            totalSetsEl.textContent = Object.keys(store.cardDB.sets).length;
         }
     };
 
