@@ -38,7 +38,7 @@ export function createDeckBuilderView() {
     mainContainer.className = 'deck-builder-container';
 
     const cardPool = createCardPool();
-    const deckPanel = createDeckPanel(); // retourne { element, destroy }
+    const deckPanel = createDeckPanel(); // doit retourner { element, destroy }
 
     mainContainer.appendChild(cardPool.element);
     mainContainer.appendChild(deckPanel.element);
@@ -51,7 +51,9 @@ export function createDeckBuilderView() {
         const filtered = query ? store.cardDB.searchCards(query) : allCards;
         cardPool.renderPool(filtered);
     };
-    searchInput.addEventListener('input', (e) => updatePool(e.target.value));
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => updatePool(e.target.value));
+    }
 
     const onDataLoaded = () => {
         allCards = store.cardDB.cards;
@@ -64,11 +66,11 @@ export function createDeckBuilderView() {
         store.on('data-loaded', onDataLoaded);
     }
 
-    // Nettoyage
     const destroy = () => {
         store.off('data-loaded', onDataLoaded);
-        deckPanel.destroy(); // Important : retire le listener 'deck-changed'
-        // cardPool n'a pas de listener externe à nettoyer
+        if (deckPanel && typeof deckPanel.destroy === 'function') {
+            deckPanel.destroy();
+        }
     };
 
     const view = container;
