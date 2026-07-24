@@ -161,19 +161,20 @@ body {
 /* Boutons icônes */
 .icon-buttons {
     display: flex;
+    flex-direction: row;          /* ← orientation forcée */
     gap: 6px;
     align-items: center;
-    flex-wrap: nowrap;            /* ← Plus de retour à la ligne */
-    overflow-x: auto;            /* ← Défilement horizontal si nécessaire */
+    flex-wrap: nowrap;            /* ← pas de retour à la ligne */
+    overflow-x: auto;             /* ← défilement si nécessaire */
     padding-bottom: 2px;
 }
 
-/* Boutons de couleur (corrigés) */
+/* Boutons de couleur */
 .color-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;                  /* ← réduit pour gagner de la place */
+    height: 32px;
     border: 2px solid transparent;
-    border-radius: 4px;          /* léger arrondi, pas de cercle */
+    border-radius: 4px;
     cursor: pointer;
     background-size: contain;
     background-repeat: no-repeat;
@@ -191,7 +192,7 @@ body {
 
 /* Boutons de coût */
 .cost-btn {
-    width: 36px; height: 36px;
+    width: 32px; height: 32px;    /* ← homogénéisé */
     border: none;
     cursor: pointer;
     background-size: cover;
