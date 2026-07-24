@@ -3,175 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deck Builder - Lorcana Optimizer</title>
-    <style>
-        :root {
-            --bg-color: #0b0d12;
-            --surface-color: #141822;
-            --surface-card: #1c2230;
-            --border-color: #2a3447;
-            --accent-gold: #f5c451;
-            --accent-gold-glow: rgba(245, 196, 81, 0.35);
-            --text-main: #f0f4fc;
-            --text-muted: #8c9ba5;
-            --font-display: 'Georgia', 'Times New Roman', serif;
-            --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: var(--font-sans);
-            background: var(--bg-color);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .header {
-            background: rgba(15, 19, 28, 0.9);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            padding: 12px 20px;
-        }
-        .header-top {
-            max-width: 1500px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-        .brand { display: flex; align-items: center; gap: 10px; }
-        .brand-icon { width: 28px; height: 28px; fill: var(--accent-gold); }
-        .title {
-            font-family: var(--font-display);
-            font-size: 20px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff 30%, var(--accent-gold) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-        }
-        .nav-links { display: flex; gap: 16px; align-items: center; }
-        .nav-link {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            transition: color 0.2s;
-            padding: 6px 12px;
-            border-radius: 6px;
-        }
-        .nav-link:hover { color: var(--accent-gold); background: rgba(245,196,81,0.1); }
-        .nav-link.active { color: var(--accent-gold); background: rgba(245,196,81,0.15); }
-        .deck-builder-container {
-            display: flex;
-            max-width: 1500px;
-            margin: 20px auto;
-            padding: 0 20px;
-            gap: 20px;
-            flex: 1;
-        }
-        .card-pool { flex: 3; }
-        .card-pool h2, .deck-panel h2 {
-            font-family: var(--font-display);
-            color: var(--accent-gold);
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
-        .search-box {
-            margin-bottom: 16px;
-            position: relative;
-        }
-        .search-box input {
-            width: 100%;
-            padding: 9px 16px 9px 38px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: rgba(20,24,34,0.8);
-            color: #fff;
-            font-size: 14px;
-            outline: none;
-        }
-        .search-box input:focus {
-            border-color: var(--accent-gold);
-            box-shadow: 0 0 12px var(--accent-gold-glow);
-        }
-        .card-pool-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 8px;
-        }
-        .card-pool-item {
-            cursor: pointer;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 2px solid transparent;
-            transition: border-color 0.2s;
-        }
-        .card-pool-item:hover { border-color: var(--accent-gold); }
-        .card-pool-item img {
-            width: 100%;
-            aspect-ratio: 5/7;
-            object-fit: contain;
-            background: #000;
-        }
-        .deck-panel {
-            flex: 1;
-            background: var(--surface-color);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            padding: 16px;
-            position: sticky;
-            top: 80px;
-            max-height: calc(100vh - 100px);
-            overflow-y: auto;
-        }
-        .deck-card-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            border-radius: 8px;
-            background: var(--surface-card);
-            margin-bottom: 6px;
-        }
-        .deck-card-item img { width: 40px; height: 56px; object-fit: contain; border-radius: 4px; }
-        .deck-card-name { flex: 1; font-size: 13px; font-weight: 500; }
-        .deck-card-quantity { display: flex; gap: 4px; align-items: center; }
-        .deck-card-quantity button {
-            width: 24px; height: 24px; border: 1px solid var(--border-color);
-            background: var(--surface-color); color: var(--text-main);
-            border-radius: 4px; cursor: pointer; font-size: 14px;
-        }
-        .deck-stats {
-            margin-top: 16px; padding-top: 16px;
-            border-top: 1px solid var(--border-color);
-            font-size: 12px; color: var(--text-muted);
-        }
-        .deck-stats div { margin-bottom: 4px; }
-        .deck-stats span { color: var(--accent-gold); font-weight: 600; }
-        .footer {
-            text-align: center; padding: 20px; font-size: 13px;
-            color: var(--text-muted); border-top: 1px solid var(--border-color);
-            margin-top: auto;
-        }
-        .footer a { color: var(--accent-gold); text-decoration: none; }
-    </style>
+    <title>Lorcana Optimizer - Deck Builder</title>
+    <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
     <header class="header">
-        <div class="header-top">
-            <div class="brand">
-                <svg class="brand-icon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-                <div class="title">Lorcana Deck Builder</div>
-            </div>
-            <div class="nav-links">
-                <a href="index.html" class="nav-link">Cartes</a>
-                <a href="deck-builder.html" class="nav-link active">Deck Builder</a>
+        <div class="header-container">
+            <div class="header-top">
+                <div class="brand">
+                    <svg class="brand-icon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                    <div class="title">Lorcana Deck Builder</div>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">Cartes</a>
+                    <a href="deck-builder.html" class="nav-link active">Deck Builder</a>
+                </div>
             </div>
         </div>
     </header>
@@ -179,12 +25,12 @@
     <div class="deck-builder-container">
         <div class="card-pool">
             <h2>Cartes disponibles</h2>
-            <div class="search-box">
+            <div class="search-box" style="margin-bottom:16px;">
                 <input type="text" id="search" placeholder="Rechercher une carte...">
             </div>
             <div class="card-pool-grid" id="cardPool"></div>
         </div>
-        <div class="deck-panel" id="deckPanel">
+        <div class="deck-panel">
             <h2>Mon Deck</h2>
             <div id="deckCards"></div>
             <div class="deck-stats" id="deckStats"></div>
@@ -213,14 +59,16 @@
         function renderCardPool(cards) {
             const container = document.getElementById('cardPool');
             container.innerHTML = cards.map(card => `
-                <div class="card-pool-item" onclick="window.addToDeck('${card.fullName}')">
+                <div class="card-pool-item" data-fullname="${card.fullName}">
                     <img src="${card.images?.thumbnail || card.images?.full}" alt="${card.fullName}" loading="lazy">
                 </div>
             `).join('');
-            window.addToDeck = (fullName) => {
-                currentDeck.addCard(fullName);
-                updateDeckView();
-            };
+            document.querySelectorAll('.card-pool-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    currentDeck.addCard(item.dataset.fullname);
+                    updateDeckView();
+                });
+            });
         }
 
         function updateDeckView() {
@@ -233,15 +81,32 @@
                         <img src="${card.images?.thumbnail || card.images?.full}" alt="${fullName}">
                         <div class="deck-card-name">${card.name} ${card.version ? ' - ' + card.version : ''}</div>
                         <div class="deck-card-quantity">
-                            <button onclick="window.changeQty('${fullName}', -1)">-</button>
+                            <button data-fullname="${fullName}" data-delta="-1">-</button>
                             <span>${quantity}</span>
-                            <button onclick="window.changeQty('${fullName}', 1)">+</button>
+                            <button data-fullname="${fullName}" data-delta="1">+</button>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            // Stats
+            document.querySelectorAll('.deck-card-quantity button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const fullName = btn.dataset.fullname;
+                    const delta = parseInt(btn.dataset.delta);
+                    if (delta > 0) {
+                        currentDeck.addCard(fullName, 1);
+                    } else {
+                        const existing = currentDeck.cards.find(c => c.fullName === fullName);
+                        if (existing && existing.quantity > 1) {
+                            existing.quantity--;
+                        } else {
+                            currentDeck.removeCard(fullName);
+                        }
+                    }
+                    updateDeckView();
+                });
+            });
+
             const totalCards = currentDeck.getTotalCards();
             const costCurve = currentDeck.getCostCurve(cardDB);
             const inkRatio = currentDeck.getInkableRatio(cardDB);
@@ -250,20 +115,6 @@
                 <div>Ratio encre : <span>${inkRatio}%</span></div>
                 <div>Courbe de coût : <span>${costCurve.join(' - ')}</span></div>
             `;
-
-            window.changeQty = (fullName, delta) => {
-                if (delta > 0) {
-                    currentDeck.addCard(fullName, 1);
-                } else {
-                    const existing = currentDeck.cards.find(c => c.fullName === fullName);
-                    if (existing && existing.quantity > 1) {
-                        existing.quantity--;
-                    } else {
-                        currentDeck.removeCard(fullName);
-                    }
-                }
-                updateDeckView();
-            };
         }
 
         document.getElementById('search').addEventListener('input', (e) => {
