@@ -703,8 +703,8 @@
 
         const colorOrder = ['Amber', 'Amethyst', 'Emerald', 'Ruby', 'Sapphire', 'Steel'];
         let selectedColors = new Set();
-        let selectedCosts = new Set();
-        let onlyInkable = false;
+        let selectedCosts = new Set();   // '1'...'8', '9+'
+        let onlyInkable = false;        // true = n'afficher que les cartes encrables
 
         function getEnglishColorName(translated) {
             if (!translated) return '';
@@ -715,6 +715,7 @@
             return translated;
         }
 
+        // Construction des boutons
         function buildColorButtons() {
             const container = document.getElementById('colorButtonsContainer');
             container.innerHTML = '';
@@ -741,6 +742,7 @@
                 btn.addEventListener('click', () => toggleCost(i, btn));
                 container.appendChild(btn);
             }
+            // Bouton 9+
             const btn9 = document.createElement('div');
             btn9.className = 'cost-btn';
             btn9.style.backgroundImage = `url('${costHexSVG}')`;
@@ -895,6 +897,7 @@
             let filtered = allCards.slice();
             if (selectedSet !== 'all') filtered = filtered.filter(c => c.setCode === selectedSet);
 
+            // Couleurs
             if (selectedColors.size > 0) {
                 filtered = filtered.filter(c => {
                     const cardColors = c.color.split('-').map(x => getEnglishColorName(x.trim()));
@@ -902,6 +905,7 @@
                 });
             }
 
+            // Coûts (union)
             if (selectedCosts.size > 0) {
                 filtered = filtered.filter(c => {
                     const cost = c.cost || 0;
@@ -912,12 +916,15 @@
                 });
             }
 
+            // Encreable
             if (onlyInkable) {
                 filtered = filtered.filter(c => c.inkwell === true);
             }
 
+            // Recherche
             if (searchTerm) filtered = filtered.filter(c => c.searchText && c.searchText.includes(searchTerm));
 
+            // Tri
             filtered.sort((a, b) => {
                 let valA = sortField === 'name' ? (a.name || '').toLowerCase() : (a.cost || 0);
                 let valB = sortField === 'name' ? (b.name || '').toLowerCase() : (b.cost || 0);
@@ -926,6 +933,7 @@
                 return 0;
             });
 
+            // Groupes (variantes)
             const groups = new Map();
             filtered.forEach(card => {
                 const key = card.fullName || `${card.name} - ${card.version}`;
