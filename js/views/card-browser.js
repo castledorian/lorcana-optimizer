@@ -61,7 +61,7 @@ export function createCardBrowserView() {
     // Grille de cartes
     let currentPage = 1;
     const CARDS_PER_PAGE = 48;
-    let uniqueCardList = [];
+    let uniqueCardList = []; // { representative, variants }
     const gridEl = document.createElement('div');
     gridEl.id = 'cardsGrid';
     container.appendChild(gridEl);
@@ -192,10 +192,10 @@ export function createCardBrowserView() {
         store.on('data-loaded', onDataLoaded);
     }
 
-    // Fonction de nettoyage
+    // Nettoyage complet
     const destroy = () => {
         store.off('data-loaded', onDataLoaded);
-        // Ne pas oublier les autres listeners s'il y en avait (ici aucun autre persistant)
+        modal.destroy(); // retire les listeners clavier globaux
     };
 
     container.init = () => {
@@ -205,7 +205,6 @@ export function createCardBrowserView() {
         }
     };
 
-    // Retourne l'élément DOM + la méthode destroy
     const view = container;
     view.destroy = destroy;
     return view;
