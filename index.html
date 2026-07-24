@@ -86,7 +86,18 @@
     </footer>
 
     <div class="modal" id="modal">
-        <!-- ... contenu modal identique à avant ... -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Détails de la carte</div>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="variant-nav" id="variantNav" style="display: none;">
+                <button id="prevVariant">← Variante précédente</button>
+                <span class="variant-count" id="variantCount">1 / 1</span>
+                <button id="nextVariant">Variante suivante →</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -107,23 +118,142 @@
         let selectedCosts = new Set();
         let onlyInkable = false;
 
-        // ... toutes les fonctions (buildColorButtons, etc.) comme dans app.js mais ici directement,
-        // ou mieux, importez-les depuis app.js si vous les avez exportées.
-        // Pour simplifier, nous allons les définir ici.
+        function getEnglishColorName(translated) {
+            if (!translated) return '';
+            const t = translations[currentLanguage].colorNames;
+            for (const [eng, loc] of Object.entries(t)) {
+                if (loc.toLowerCase() === String(translated).toLowerCase()) return eng;
+            }
+            return translated;
+        }
 
-        function buildColorButtons() { /* ... */ }
-        // ... (copiez les fonctions depuis les versions précédentes)
+        function buildColorButtons() {
+            const container = document.getElementById('colorButtonsContainer');
+            container.innerHTML = '';
+            colorOrder.forEach(color => {
+                const btn = document.createElement('div');
+                btn.className = 'color-btn';
+                btn.style.backgroundImage = `url('${colorSVGDataURIs[color]}')`;
+                btn.title = translations[currentLanguage].colorNames[color] || color;
+                btn.dataset.color = color;
+                btn.addEventListener('click', () => toggleColor(color, btn));
+                container.appendChild(btn);
+            });
+        }
 
-        async function init() {
-            buildColorButtons();
-            buildCostButtons();
-            buildInkableButton();
-            applyUILanguage('fr');
+        function buildCostButtons() {
+            const container = document.getElementById('costButtonsContainer');
+            container.innerHTML = '';
+            for (let i = 1; i <= 8; i++) {
+                const btn = document.createElement('div');
+                btn.className = 'cost-btn';
+                btn.style.backgroundImage = `url('${costHexSVG}')`;
+                btn.textContent = i;
+                btn.dataset.cost = i;
+                btn.addEventListener('click', () => toggleCost(i, btn));
+                container.appendChild(btn);
+            }
+            const btn9 = document.createElement('div');
+            btn9.className = 'cost-btn';
+            btn9.style.backgroundImage = `url('${costHexSVG}')`;
+            btn9.textContent = '9+';
+            btn9.dataset.cost = '9+';
+            btn9.addEventListener('click', () => toggleCost('9+', btn9));
+            container.appendChild(btn9);
+        }
+
+        function buildInkableButton() {
+            const container = document.getElementById('inkableButton');
+            container.innerHTML = '';
+            const btn = document.createElement('div');
+            btn.className = 'inkable-btn';
+            btn.style.backgroundImage = `url('${inkwellSVG}')`;
+            btn.title = 'Filtrer cartes encrables';
+            btn.addEventListener('click', () => {
+                onlyInkable = !onlyInkable;
+                btn.classList.toggle('active');
+                applyFiltersAndDisplay();
+            });
+            container.appendChild(btn);
+        }
+
+        function toggleColor(color, btn) {
+            if (selectedColors.has(color)) {
+                selectedColors.delete(color);
+                btn.classList.remove('active');
+            } else {
+                selectedColors.add(color);
+                btn.classList.add('active');
+            }
+            applyFiltersAndDisplay();
+        }
+
+        function toggleCost(cost, btn) {
+            const key = String(cost);
+            if (selectedCosts.has(key)) {
+                selectedCosts.delete(key);
+                btn.classList.remove('active');
+            } else {
+                selectedCosts.add(key);
+                btn.classList.add('active');
+            }
+            applyFiltersAndDisplay();
+        }
+
+        function resetAllFilters() {
+            selectedColors.clear();
+            selectedCosts.clear();
+            onlyInkable = false;
+            document.querySelectorAll('.color-btn, .cost-btn, .inkable-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('set').value = 'all';
+            document.getElementById('sort').value = 'name-asc';
+            document.getElementById('search').value = '';
+            applyFiltersAndDisplay();
+        }
+
+        function applyUILanguage(lang) {
+            const t = translations[lang];
+            document.getElementById('loadingText').textContent = t.loading;
+            document.querySelector('#set option[value="all"]').textContent = t.allSets;
+            document.querySelector('#cost option[value="all"]').textContent = t.allCosts;
+            document.querySelector('#sort option[value="name-asc"]').textContent = t.sortNameAsc;
+            document.querySelector('#sort option[value="name-desc"]').textContent = t.sortNameDesc;
+            document.querySelector('#sort option[value="cost-asc"]').textContent = t.sortCostAsc;
+            document.querySelector('#sort option[value="cost-desc"]').textContent = t.sortCostDesc;
+            document.getElementById('prevPage').innerHTML = t.prevBtn;
+            document.getElementById('nextPage').innerHTML = t.nextBtn;
+            document.getElementById('modalTitle').textContent = t.modalTitle;
+            document.getElementById('prevVariant').textContent = t.prevVariantText;
+            document.getElementById('nextVariant').textContent = t.nextVariantText;
+            updatePaginationText();
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                const color = btn.dataset.color;
+                btn.title = t.colorNames[color] || color;
+            });
+        }
+
+        function updatePaginationText() {
+            const t = translations[currentLanguage];
+            const totalPages = Math.ceil(uniqueCardList.length / CARDS_PER_PAGE) || 1;
+            if (totalPages > 1) {
+                document.getElementById('pageInfo').textContent = `${t.page} ${currentPage} ${t.of} ${totalPages}`;
+            }
+        }
+
+        async function loadCards(lang) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error')?.remove();
             try {
-                await cardDB.load('fr');
+                await cardDB.load(lang);
                 allCards = cardDB.cards;
                 allSets = cardDB.sets;
-                // ... traitement des cartes
+                allCards.forEach(card => {
+                    const subtypes = card.subtypesText || (card.subtypes ? card.subtypes.join(' ') : '');
+                    const artists = card.artistsText || (card.artists ? card.artists.join(' ') : '');
+                    const story = card.story || '';
+                    const flavor = card.flavorText || '';
+                    card.searchText = `${card.name} ${card.version} ${card.fullName} ${card.simpleName} ${subtypes} ${artists} ${story} ${flavor}`.toLowerCase();
+                });
                 populateSetSelect();
                 updateStats();
                 applyFiltersAndDisplay();
@@ -132,11 +262,221 @@
             } catch (err) {
                 document.getElementById('loading').innerHTML = `<div class="error">Erreur : ${err.message}</div>`;
             }
-            document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
-            // ... autres écouteurs
         }
 
-        init();
+        function populateSetSelect() {
+            const setSelect = document.getElementById('set');
+            const t = translations[currentLanguage];
+            setSelect.innerHTML = `<option value="all">${t.allSets}</option>`;
+            Object.entries(allSets).forEach(([id, set]) => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = `${set.number} - ${set.name}`;
+                setSelect.appendChild(opt);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('totalCards').textContent = allCards.length;
+            document.getElementById('totalSets').textContent = Object.keys(allSets).length;
+        }
+
+        function applyFiltersAndDisplay() {
+            if (!allCards.length) return;
+            const selectedSet = document.getElementById('set').value;
+            const searchTerm = document.getElementById('search').value.toLowerCase().trim();
+            const [sortField, sortOrder] = document.getElementById('sort').value.split('-');
+
+            let filtered = allCards.slice();
+            if (selectedSet !== 'all') filtered = filtered.filter(c => c.setCode === selectedSet);
+
+            if (selectedColors.size > 0) {
+                filtered = filtered.filter(c => {
+                    const cardColors = c.color.split('-').map(x => getEnglishColorName(x.trim()));
+                    return cardColors.some(color => selectedColors.has(color));
+                });
+            }
+
+            if (selectedCosts.size > 0) {
+                filtered = filtered.filter(c => {
+                    const cost = c.cost || 0;
+                    return [...selectedCosts].some(sc => {
+                        if (sc === '9+') return cost >= 9;
+                        return cost === parseInt(sc);
+                    });
+                });
+            }
+
+            if (onlyInkable) {
+                filtered = filtered.filter(c => c.inkwell === true);
+            }
+
+            if (searchTerm) filtered = filtered.filter(c => c.searchText && c.searchText.includes(searchTerm));
+
+            filtered.sort((a, b) => {
+                let valA = sortField === 'name' ? (a.name || '').toLowerCase() : (a.cost || 0);
+                let valB = sortField === 'name' ? (b.name || '').toLowerCase() : (b.cost || 0);
+                if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            const groups = new Map();
+            filtered.forEach(card => {
+                const key = card.fullName || `${card.name} - ${card.version}`;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(card);
+            });
+            uniqueCardList = Array.from(groups, ([, variants]) => ({ representative: variants[0], variants }));
+            document.getElementById('displayedCards').textContent = uniqueCardList.length;
+            currentPage = 1;
+            renderPage();
+        }
+
+        function renderPage() {
+            const totalPages = Math.ceil(uniqueCardList.length / CARDS_PER_PAGE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * CARDS_PER_PAGE;
+            const pageCards = uniqueCardList.slice(start, start + CARDS_PER_PAGE);
+            const grid = document.getElementById('cardsGrid');
+            if (pageCards.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted)">Aucune carte trouvée</div>';
+            } else {
+                let html = '';
+                pageCards.forEach(group => {
+                    const card = group.representative;
+                    const img = card.images?.thumbnail || card.images?.full || '';
+                    const safeName = (card.fullName || card.name || '').replace(/"/g, '&quot;');
+                    html += `<div class="card-frame" data-color="${card.color || ''}" data-fullname="${safeName}">
+                        <div class="card"><img src="${img}" alt="${safeName}" class="card-image" loading="lazy"></div>
+                    </div>`;
+                });
+                grid.innerHTML = html;
+            }
+            const pagDiv = document.getElementById('pagination');
+            if (totalPages > 1) {
+                pagDiv.style.display = 'flex';
+                updatePaginationText();
+                document.getElementById('prevPage').disabled = currentPage === 1;
+                document.getElementById('nextPage').disabled = currentPage === totalPages;
+            } else {
+                pagDiv.style.display = 'none';
+            }
+        }
+
+        function getColorStyle(colorField) {
+            if (!colorField) return 'var(--accent-gold)';
+            const colors = colorField.split('-').map(c => getEnglishColorName(c.trim()));
+            const hexes = colors.map(c => colorHexMap[c]).filter(Boolean);
+            if (hexes.length === 1) return hexes[0];
+            if (hexes.length >= 2) return `linear-gradient(135deg, ${hexes[0]}, ${hexes[1]})`;
+            return 'var(--accent-gold)';
+        }
+
+        // Événements
+        document.getElementById('set').addEventListener('change', applyFiltersAndDisplay);
+        document.getElementById('search').addEventListener('input', applyFiltersAndDisplay);
+        document.getElementById('sort').addEventListener('change', applyFiltersAndDisplay);
+        document.getElementById('language').addEventListener('change', (e) => {
+            currentLanguage = e.target.value;
+            applyUILanguage(currentLanguage);
+            loadCards(currentLanguage);
+        });
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 1) { currentPage--; renderPage(); window.scrollTo(0,0); }
+        });
+        document.getElementById('nextPage').addEventListener('click', () => {
+            if (currentPage < Math.ceil(uniqueCardList.length / CARDS_PER_PAGE)) { currentPage++; renderPage(); window.scrollTo(0,0); }
+        });
+        document.getElementById('cardsGrid').addEventListener('click', (e) => {
+            const frame = e.target.closest('.card-frame');
+            if (!frame) return;
+            const group = uniqueCardList.find(g => g.representative.fullName === frame.dataset.fullname);
+            if (group) openVariantModal(group.variants, 0);
+        });
+        document.getElementById('cardsGrid').addEventListener('mouseover', (e) => {
+            const frame = e.target.closest('.card-frame');
+            if (!frame) return;
+            frame.style.background = getColorStyle(frame.dataset.color || '');
+        });
+        document.getElementById('cardsGrid').addEventListener('mouseout', (e) => {
+            const frame = e.target.closest('.card-frame');
+            if (!frame) return;
+            frame.style.background = '';
+        });
+
+        function openVariantModal(variants, index) {
+            currentVariants = variants;
+            currentVariantIndex = index;
+            showVariantAtIndex();
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('variantNav').style.display = variants.length > 1 ? 'flex' : 'none';
+        }
+
+        function showVariantAtIndex() {
+            const card = currentVariants[currentVariantIndex];
+            const t = translations[currentLanguage];
+            document.getElementById('modalTitle').textContent = card.fullName || card.name;
+            const img = card.images?.full || card.images?.thumbnail || '';
+            const subtypes = card.subtypesText || (card.subtypes ? card.subtypes.join(' • ') : '-');
+            const artists = card.artistsText || (card.artists ? card.artists.join(', ') : '-');
+            const flavor = card.flavorText || '';
+            const displayColor = card.color.split('-').map(c => t.colorNames[c] || c).join(' / ') || '-';
+            const type = t.types[card.type] || card.type || '-';
+            const rarity = t.rarities[card.rarity] || card.rarity || '-';
+            const inkable = card.inkwell ? 'Encrable' : 'Non encrable';
+
+            const html = `
+                <div><img src="${img}" alt="${card.fullName}" class="modal-image"></div>
+                <div class="modal-details">
+                    <h3>${card.name || ''} ${card.version ? `<span style="font-size:14px;font-weight:normal;color:var(--text-muted)">— ${card.version}</span>` : ''}</h3>
+                    <div class="modal-detail-grid">
+                        <div class="modal-detail"><span class="modal-detail-label">Type</span><span class="modal-detail-value">${type}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Sous-types</span><span class="modal-detail-value">${subtypes}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Couleur</span><span class="modal-detail-value">${displayColor}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Coût / Encre</span><span class="modal-detail-value">${card.cost || 0} (${inkable})</span></div>
+                        ${card.strength !== undefined ? `<div class="modal-detail"><span class="modal-detail-label">Force</span><span class="modal-detail-value">${card.strength}</span></div>` : ''}
+                        ${card.willpower !== undefined ? `<div class="modal-detail"><span class="modal-detail-label">Volonté</span><span class="modal-detail-value">${card.willpower}</span></div>` : ''}
+                        ${card.lore !== undefined ? `<div class="modal-detail"><span class="modal-detail-label">Lore</span><span class="modal-detail-value">${card.lore}</span></div>` : ''}
+                        <div class="modal-detail"><span class="modal-detail-label">Rareté</span><span class="modal-detail-value">${rarity}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Extension</span><span class="modal-detail-value">${allSets[card.setCode]?.name || card.setCode || '-'}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Numéro</span><span class="modal-detail-value">${card.number || '?'}/${allSets[card.setCode]?.cardCounts?.base || '?'}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Artiste(s)</span><span class="modal-detail-value">${artists}</span></div>
+                    </div>
+                    ${flavor ? `<div class="modal-text">"${flavor}"</div>` : ''}
+                    ${card.externalLinks ? `<div class="modal-links">${card.externalLinks.tcgPlayerUrl ? `<a href="${card.externalLinks.tcgPlayerUrl}" target="_blank">TCGPlayer ↗</a>` : ''}${card.externalLinks.cardmarketUrl ? `<a href="${card.externalLinks.cardmarketUrl}" target="_blank">Cardmarket ↗</a>` : ''}</div>` : ''}
+                </div>`;
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('variantCount').textContent = `${currentVariantIndex + 1} / ${currentVariants.length}`;
+            document.getElementById('prevVariant').disabled = currentVariantIndex === 0;
+            document.getElementById('nextVariant').disabled = currentVariantIndex === currentVariants.length - 1;
+        }
+
+        function closeModal() { document.getElementById('modal').classList.remove('active'); }
+        document.getElementById('prevVariant').addEventListener('click', () => {
+            if (currentVariantIndex > 0) { currentVariantIndex--; showVariantAtIndex(); }
+        });
+        document.getElementById('nextVariant').addEventListener('click', () => {
+            if (currentVariantIndex < currentVariants.length - 1) { currentVariantIndex++; showVariantAtIndex(); }
+        });
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modal')) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+            if (document.getElementById('modal').classList.contains('active')) {
+                if (e.key === 'ArrowLeft') document.getElementById('prevVariant').click();
+                if (e.key === 'ArrowRight') document.getElementById('nextVariant').click();
+            }
+        });
+
+        // Initialisation
+        buildColorButtons();
+        buildCostButtons();
+        buildInkableButton();
+        applyUILanguage('fr');
+        loadCards('fr');
+        document.getElementById('resetFiltersBtn').addEventListener('click', resetAllFilters);
     </script>
 </body>
 </html>
