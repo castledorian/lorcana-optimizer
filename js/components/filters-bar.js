@@ -69,21 +69,36 @@ export function createFiltersBar({ onFilterChange }) {
     if (store.cardDB.ready) populateSets();
     else store.on('data-loaded', populateSets);
 
-    // Conteneur des couleurs – alignement horizontal forcé
+    // --- Conteneur des couleurs ---
     const colorContainer = container.querySelector('#colorButtonsContainer');
     colorContainer.style.display = 'flex';
     colorContainer.style.flexDirection = 'row';
     colorContainer.style.flexWrap = 'nowrap';
     colorContainer.style.gap = '6px';
     colorContainer.style.alignItems = 'center';
-    colorContainer.style.overflowX = 'auto';
 
     colorOrder.forEach(color => {
         const btn = document.createElement('div');
         btn.className = 'color-btn';
-        btn.style.backgroundImage = `url(${colorSVGDataURIs[color]})`;
-        btn.title = translations[store.language].colorNames[color] || color;
+        // Fond hexagonal identique aux coûts
+        btn.style.backgroundImage = `url('${costHexSVG}')`;
+        btn.style.backgroundSize = 'cover';
         btn.dataset.color = color;
+        btn.title = translations[store.language].colorNames[color] || color;
+
+        // Icône de la couleur superposée
+        const icon = document.createElement('img');
+        icon.src = colorSVGDataURIs[color];
+        icon.className = 'color-icon';
+        icon.style.position = 'absolute';
+        icon.style.top = '50%';
+        icon.style.left = '50%';
+        icon.style.transform = 'translate(-50%, -50%)';
+        icon.style.width = '22px';
+        icon.style.height = '22px';
+        icon.style.pointerEvents = 'none';
+        btn.appendChild(icon);
+
         btn.addEventListener('click', () => {
             btn.classList.toggle('active');
             if (onFilterChange) onFilterChange();
@@ -91,14 +106,13 @@ export function createFiltersBar({ onFilterChange }) {
         colorContainer.appendChild(btn);
     });
 
-    // Conteneur des coûts – alignement horizontal forcé
+    // --- Conteneur des coûts ---
     const costContainer = container.querySelector('#costButtonsContainer');
     costContainer.style.display = 'flex';
     costContainer.style.flexDirection = 'row';
     costContainer.style.flexWrap = 'nowrap';
     costContainer.style.gap = '6px';
     costContainer.style.alignItems = 'center';
-    costContainer.style.overflowX = 'auto';
 
     for (let i = 1; i <= 8; i++) {
         const btn = document.createElement('div');
@@ -125,7 +139,7 @@ export function createFiltersBar({ onFilterChange }) {
     });
     costContainer.appendChild(btn9);
 
-    // Conteneur encre – alignement horizontal
+    // --- Conteneur encre ---
     const inkContainer = container.querySelector('#inkableButton');
     inkContainer.style.display = 'flex';
     inkContainer.style.flexDirection = 'row';
