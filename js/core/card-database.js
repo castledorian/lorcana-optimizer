@@ -1,4 +1,4 @@
-// js/core/card-database.js (inchangé)
+// js/core/card-database.js
 class CardDatabase {
     constructor() {
         this.cards = [];
@@ -15,6 +15,16 @@ class CardDatabase {
             const data = await response.json();
             this.cards = data.cards;
             this.sets = data.sets;
+
+            // Ajout de searchText pour la recherche étendue
+            this.cards.forEach(card => {
+                const subtypes = card.subtypesText || (card.subtypes ? card.subtypes.join(' ') : '');
+                const artists = card.artistsText || (card.artists ? card.artists.join(' ') : '');
+                const story = card.story || '';
+                const flavor = card.flavorText || '';
+                card.searchText = `${card.name} ${card.version} ${card.fullName} ${card.simpleName} ${subtypes} ${artists} ${story} ${flavor}`.toLowerCase();
+            });
+
             this.ready = true;
             this._notifyListeners();
         } catch (err) {
