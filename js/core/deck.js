@@ -1,3 +1,4 @@
+// js/core/deck.js (inchangé)
 export default class Deck {
     constructor() {
         this.cards = []; // { fullName: string, quantity: number }
