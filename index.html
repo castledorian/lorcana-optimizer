@@ -832,16 +832,22 @@
             }
         }
 
-        // ---------- CHARGEMENT DES CARTES (fichier local, avec fallback proxies) ----------
+        // ---------- CHARGEMENT DES CARTES (corrigé) ----------
         async function fetchCardsData() {
-            // 1. Essayer le fichier local lorcana-data.json
-            try {
-                const res = await fetch('lorcana-data.json');
-                if (res.ok) return await res.json();
-            } catch (e) { /* ignore */ }
+            const url = 'https://lorcanajson.org/files/current/fr/allCards.json';
 
-            // 2. Fallback : utiliser les proxies (si le fichier local n'existe pas)
-            const url = `https://lorcanajson.org/files/current/fr/allCards.json`;
+            // Essayer un fetch direct avec un timeout
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000);
+                const res = await fetch(url, { mode: 'cors', signal: controller.signal });
+                clearTimeout(timeout);
+                if (res.ok) return await res.json();
+            } catch (e) {
+                console.warn('Fetch direct échoué, tentative via proxies...');
+            }
+
+            // Essayer plusieurs proxies avec timeout
             const proxies = [
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
                 `https://corsproxy.io/?${encodeURIComponent(url)}`,
@@ -849,16 +855,28 @@
             ];
             for (const proxyUrl of proxies) {
                 try {
-                    const res = await fetch(proxyUrl);
-                    if (res.ok) return await res.json();
-                } catch (e) { /* ignore */ }
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 10000);
+                    const res = await fetch(proxyUrl, { signal: controller.signal });
+                    clearTimeout(timeout);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.cards) return data;
+                    }
+                } catch (e) {
+                    console.warn(`Proxy échoué : ${proxyUrl}`);
+                }
             }
-            throw new Error("Impossible de charger les cartes.");
+
+            throw new Error("Impossible de charger les cartes. Vérifiez votre connexion ou réessayez.");
         }
 
         async function loadCards() {
-            document.getElementById('loading').style.display = 'block';
+            const loadingEl = document.getElementById('loading');
+            loadingEl.innerHTML = `<div class="spinner"></div><span>Chargement des cartes...</span>`;
+            loadingEl.style.display = 'block';
             document.getElementById('error')?.remove();
+
             try {
                 const data = await fetchCardsData();
                 allCards = data.cards || [];
@@ -873,10 +891,16 @@
                 populateSetSelect();
                 updateStats();
                 applyFiltersAndDisplay();
-                document.getElementById('loading').style.display = 'none';
+                loadingEl.style.display = 'none';
                 document.getElementById('stats').style.display = 'flex';
             } catch (err) {
-                document.getElementById('loading').innerHTML = `<div class="error">Erreur : ${err.message}<br><button onclick="loadCards()">Réessayer</button></div>`;
+                loadingEl.innerHTML = `
+                    <div class="error">
+                        <div style="font-weight:700;font-size:16px;margin-bottom:8px;">⚠️ Erreur de chargement</div>
+                        <div style="font-size:13px;color:#fca5a5;margin-bottom:12px;">${err.message}</div>
+                        <button onclick="loadCards()" style="background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;">Réessayer</button>
+                    </div>
+                `;
             }
         }
 
