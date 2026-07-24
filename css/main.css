@@ -161,38 +161,49 @@ body {
 /* Boutons icônes */
 .icon-buttons {
     display: flex;
-    flex-direction: row;          /* ← orientation forcée */
+    flex-direction: row;
     gap: 6px;
     align-items: center;
-    flex-wrap: nowrap;            /* ← pas de retour à la ligne */
-    overflow-x: auto;             /* ← défilement si nécessaire */
-    padding-bottom: 2px;
+    flex-wrap: nowrap;
+    overflow-x: clip;            /* ← empêche la barre de défilement inutile */
+    padding: 2px;                /* ← espace pour l'agrandissement au survol */
 }
 
-/* Boutons de couleur */
+/* Boutons de couleur – ressemblent aux boutons de coût */
 .color-btn {
-    width: 32px;                  /* ← réduit pour gagner de la place */
+    width: 32px;
     height: 32px;
-    border: 2px solid transparent;
-    border-radius: 4px;
+    border: none;
     cursor: pointer;
-    background-size: contain;
+    background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
     background-color: transparent;
+    position: relative;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    filter: brightness(0.8);
 }
 .color-btn.active {
-    border-color: var(--accent-gold);
+    filter: brightness(1.4) drop-shadow(0 0 4px var(--accent-gold-glow));
     transform: scale(1.1);
-    box-shadow: 0 0 10px var(--accent-gold-glow);
 }
-.color-btn:hover { border-color: var(--accent-gold); }
+.color-btn:hover {
+    filter: brightness(1.2);
+}
+.color-btn .color-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
+}
 
 /* Boutons de coût */
 .cost-btn {
-    width: 32px; height: 32px;    /* ← homogénéisé */
+    width: 32px; height: 32px;
     border: none;
     cursor: pointer;
     background-size: cover;
