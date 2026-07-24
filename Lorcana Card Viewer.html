@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lorcana Card Viewer Pro</title>
+    <style>
+        :root {
+            --bg-color: #0b0d12;
+            --surface-color: #141822;
+            --surface-card: #1c2230;
+            --border-color: #2a3447;
+            --accent-gold: #f5c451;
+            --accent-gold-glow: rgba(245, 196, 81, 0.35);
+            --text-main: #f0f4fc;
+            --text-muted: #8c9ba5;
+            --font-display: 'Georgia', 'Times New Roman', serif;
+            --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --color-amber: #ffaa00;
+            --color-amethyst: #a855f7;
+            --color-emerald: #10b981;
+            --color-ruby: #ef4444;
+            --color-sapphire: #3b82f6;
+            --color-steel: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(15, 19, 28, 0.9);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 12px 20px;
+        }
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-icon { width: 28px; height: 28px; fill: var(--accent-gold); }
+        .title {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 30%, var(--accent-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 240px;
+            max-width: 480px;
+            position: relative;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 9px 16px 9px 38px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: rgba(20, 24, 34, 0.8);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .search-box input:focus {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 12px var(--accent-gold-glow);
+        }
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            fill: var(--text-muted);
+        }
+        .lang-selector select {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--accent-gold);
+            padding: 6px 28px 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23f5c451'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            background-size: 14px;
+        }
+
+        .header-filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .filter-group label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .filter-group select {
+            padding: 6px 26px 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--surface-color);
+            color: var(--text-main);
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238c9ba5'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            background-size: 14px;
+        }
+        .filter-group select:focus, .filter-group select:hover {
+            border-color: var(--accent-gold);
+        }
+
+        /* Boutons de couleur (comme duels.ink) */
+        .color-buttons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .color-btn {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            cursor: pointer;
+            background-size: 22px 22px;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: var(--surface-color);
+            transition: all 0.2s ease;
+        }
+        .color-btn.active {
+            border-color: var(--accent-gold);
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--accent-gold-glow);
+        }
+        .color-btn:hover {
+            border-color: var(--accent-gold);
+        }
+        .clear-colors-btn {
+            font-size: 12px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--surface-color);
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+        .clear-colors-btn:hover {
+            border-color: var(--accent-gold);
+            color: #fff;
+            background: rgba(245, 196, 81, 0.1);
+        }
+
+        .cards-grid {
+            max-width: 1500px;
+            margin: 20px auto;
+            padding: 0 20px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+            flex: 1;
+        }
+        .card-frame {
+            border-radius: 12px;
+            padding: 2px;
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .card-frame:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+        .card {
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .card-image {
+            width: 100%;
+            aspect-ratio: 5/7;
+            object-fit: contain;
+            background: #0d1117;
+            display: block;
+        }
+
+        .loading { text-align: center; padding: 60px; color: var(--text-muted); }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(245,196,81,0.2);
+            border-top-color: var(--accent-gold);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .stats {
+            max-width: 1500px;
+            margin: 16px auto 0;
+            padding: 0 20px;
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .stat-value { font-weight: 700; color: var(--accent-gold); font-size: 15px; }
+
+        .pagination {
+            max-width: 1500px;
+            margin: 20px auto 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+        }
+        .pagination button {
+            padding: 8px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--surface-color);
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .pagination button:hover:not(:disabled) {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+        .pagination button:disabled { opacity: 0.3; cursor: default; }
+        .page-info { color: var(--text-muted); font-size: 14px; }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+        .footer a { color: var(--accent-gold); text-decoration: none; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4,6,10,0.88);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--surface-color);
+            border-radius: 18px;
+            max-width: 950px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(245,196,81,0.1);
+        }
+        .modal-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--surface-color);
+            z-index: 10;
+        }
+        .modal-title {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+        .close-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .close-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .modal-body {
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 28px;
+        }
+        @media (max-width: 768px) { .modal-body { grid-template-columns: 1fr; } }
+        .modal-image {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-details h3 {
+            font-family: var(--font-display);
+            color: var(--accent-gold);
+            margin-bottom: 16px;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 8px;
+        }
+        .modal-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px 16px;
+            margin-bottom: 16px;
+        }
+        .modal-detail { display: flex; flex-direction: column; gap: 2px; }
+        .modal-detail-label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-detail-value { color: var(--text-main); font-size: 14px; font-weight: 500; }
+        .modal-text {
+            background: rgba(0,0,0,0.3);
+            border-left: 3px solid var(--accent-gold);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 14px;
+            font-style: italic;
+            color: #d0d7e5;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .modal-links { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .modal-links a {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .modal-links a:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(245,196,81,0.08);
+        }
+        .variant-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.2);
+        }
+        .variant-nav button {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .variant-nav button:hover:not(:disabled) {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+        .variant-nav button:disabled { opacity: 0.3; cursor: default; }
+        .variant-count { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+
+        .error {
+            text-align: center;
+            padding: 30px 20px;
+            color: #ef4444;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 12px;
+            max-width: 650px;
+            margin: 40px auto;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <div class="header-top">
+                <div class="brand">
+                    <svg class="brand-icon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                    <div class="title" id="mainTitle">Lorcana Card Viewer</div>
+                </div>
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" id="search" placeholder="Rechercher une carte...">
+                </div>
+                <div class="lang-selector">
+                    <select id="language">
+                        <option value="fr">FR</option>
+                        <option value="en">EN</option>
+                        <option value="de">DE</option>
+                        <option value="it">IT</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-filters">
+                <div class="filter-group">
+                    <label for="set">Extension</label>
+                    <select id="set"><option value="all">Toutes</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Couleurs</label>
+                    <div class="color-buttons" id="colorButtonsContainer"></div>
+                </div>
+                <div class="filter-group">
+                    <label for="cost">Niveau</label>
+                    <select id="cost">
+                        <option value="all">Tous</option>
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                        <option value="7">7</option><option value="8">8</option><option value="9+">9+</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort">Tri</label>
+                    <select id="sort">
+                        <option value="name-asc">Nom A-Z</option>
+                        <option value="name-desc">Nom Z-A</option>
+                        <option value="cost-asc">Coût ↑</option>
+                        <option value="cost-desc">Coût ↓</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="stats" id="stats" style="display: none;">
+        <div>Total : <span class="stat-value" id="totalCards">0</span></div>
+        <div>Affichées : <span class="stat-value" id="displayedCards">0</span></div>
+        <div>Extensions : <span class="stat-value" id="totalSets">0</span></div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <span id="loadingText">Chargement des cartes...</span>
+    </div>
+
+    <div class="cards-grid" id="cardsGrid"></div>
+
+    <div class="pagination" id="pagination" style="display: none;">
+        <button id="prevPage">← Précédent</button>
+        <span class="page-info" id="pageInfo">Page 1</span>
+        <button id="nextPage">Suivant →</button>
+    </div>
+
+    <footer class="footer">
+        Données fournies par <a href="https://lorcanajson.org" target="_blank">Lorcanajson.org</a> — Lorcana Card Viewer Pro
+    </footer>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Détails de la carte</div>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="variant-nav" id="variantNav" style="display: none;">
+                <button id="prevVariant">← Variante précédente</button>
+                <span class="variant-count" id="variantCount">1 / 1</span>
+                <button id="nextVariant">Variante suivante →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------- TRADUCTIONS ----------
+        const translations = {
+            fr: {
+                loading: "Chargement des cartes...",
+                allSets: "Toutes",
+                allColors: "Toutes",
+                allCosts: "Tous",
+                sortNameAsc: "Nom A-Z",
+                sortNameDesc: "Nom Z-A",
+                sortCostAsc: "Coût ↑",
+                sortCostDesc: "Coût ↓",
+                prevBtn: "← Précédent",
+                nextBtn: "Suivant →",
+                page: "Page",
+                of: "sur",
+                modalTitle: "Détails de la carte",
+                prevVariantText: "← Variante précédente",
+                nextVariantText: "Variante suivante →",
+                colorNames: {
+                    Amber: "Ambre", Amethyst: "Améthyste", Emerald: "Émeraude",
+                    Ruby: "Rubis", Sapphire: "Saphir", Steel: "Acier"
+                },
+                types: { Character: "Personnage", Action: "Action", Item: "Objet", Location: "Lieu" },
+                rarities: { Common: "Commune", Uncommon: "Inhabituelle", Rare: "Rare", "Super Rare": "Super Rare", Legendary: "Légendaire", Enchanted: "Enchantée", Special: "Spéciale" }
+            },
+            en: {
+                loading: "Loading cards...",
+                allSets: "All",
+                allColors: "All",
+                allCosts: "All",
+                sortNameAsc: "Name A-Z",
+                sortNameDesc: "Name Z-A",
+                sortCostAsc: "Cost ↑",
+                sortCostDesc: "Cost ↓",
+                prevBtn: "← Previous",
+                nextBtn: "Next →",
+                page: "Page",
+                of: "of",
+                modalTitle: "Card Details",
+                prevVariantText: "← Previous Variant",
+                nextVariantText: "Next Variant →",
+                colorNames: {
+                    Amber: "Amber", Amethyst: "Amethyst", Emerald: "Emerald",
+                    Ruby: "Ruby", Sapphire: "Sapphire", Steel: "Steel"
+                },
+                types: { Character: "Character", Action: "Action", Item: "Item", Location: "Location" },
+                rarities: { Common: "Common", Uncommon: "Uncommon", Rare: "Rare", "Super Rare": "Super Rare", Legendary: "Legendary", Enchanted: "Enchanted", Special: "Special" }
+            },
+            de: {
+                loading: "Karten werden geladen...",
+                allSets: "Alle",
+                allColors: "Alle",
+                allCosts: "Alle",
+                sortNameAsc: "Name A-Z",
+                sortNameDesc: "Name Z-A",
+                sortCostAsc: "Kosten ↑",
+                sortCostDesc: "Kosten ↓",
+                prevBtn: "← Zurück",
+                nextBtn: "Weiter →",
+                page: "Seite",
+                of: "von",
+                modalTitle: "Kartendetails",
+                prevVariantText: "← Vorherige Variante",
+                nextVariantText: "Nächste Variante →",
+                colorNames: {
+                    Amber: "Bernstein", Amethyst: "Amethyst", Emerald: "Smaragd",
+                    Ruby: "Rubin", Sapphire: "Saphir", Steel: "Stahl"
+                },
+                types: { Character: "Charakter", Action: "Aktion", Item: "Gegenstand", Location: "Ort" },
+                rarities: { Common: "Gewöhnlich", Uncommon: "Ungewöhnlich", Rare: "Selten", "Super Rare": "Super Selten", Legendary: "Legendär", Enchanted: "Episch", Special: "Spezial" }
+            },
+            it: {
+                loading: "Caricamento carte...",
+                allSets: "Tutte",
+                allColors: "Tutti",
+                allCosts: "Tutti",
+                sortNameAsc: "Nome A-Z",
+                sortNameDesc: "Nome Z-A",
+                sortCostAsc: "Costo ↑",
+                sortCostDesc: "Costo ↓",
+                prevBtn: "← Precedente",
+                nextBtn: "Successivo →",
+                page: "Pagina",
+                of: "di",
+                modalTitle: "Dettagli Carta",
+                prevVariantText: "← Variante precedente",
+                nextVariantText: "Variante successiva →",
+                colorNames: {
+                    Amber: "Ambra", Amethyst: "Ametista", Emerald: "Smeraldo",
+                    Ruby: "Rubino", Sapphire: "Zaffiro", Steel: "Acciaio"
+                },
+                types: { Character: "Personaggio", Action: "Azione", Item: "Oggetto", Location: "Luogo" },
+                rarities: { Common: "Comune", Uncommon: "Non Comune", Rare: "Rara", "Super Rare": "Super Rara", Legendary: "Leggendaria", Enchanted: "Incantata", Special: "Speciale" }
+            }
+        };
+
+        const colorHexMap = {
+            Amber: '#ffaa00', Amethyst: '#a855f7', Emerald: '#10b981',
+            Ruby: '#ef4444', Sapphire: '#3b82f6', Steel: '#94a3b8'
+        };
+
+        // ---------- SVG OFFICIELS EN DATA URI ----------
+        const colorSVGDataURIs = {
+            Amber: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.7 42.4"><defs><style>.st0{fill:#f4b223}.st1{fill:#c9b78d;fill-rule:evenodd}.st2{fill:#292a47}</style></defs><path class="st2" d="M0,10.6v21.2l18.4,10.6,18.4-10.6V10.6L18.4,0,0,10.6Z"/><path class="st2" d="M1.8,11.6v19.1l16.5,9.5,16.5-9.5V11.6L18.3,2.1,1.8,11.6Z"/><path class="st1" d="M3,30l15.3,8.8,15.3-8.8V12.3L18.3,3.5,3,12.3v17.7ZM18.3,2.1l16.5,9.5v19.1l-16.5,9.5L1.8,30.7V11.6L18.3,2.1Z"/><path class="st0" d="M8.3,21.9c.1.3.2.6.3.8.7-.9,1.3-1.7,1.9-2.4-.6-1.8-1.1-3.4-1.4-4.8l1.1-.7c-.2-1-.4-1.9-.5-2.8-.7.4-2.8,1.6-3.6,2.1.4,2.5,1,5,2.1,7.7Z"/><path class="st0" d="M9.8,27.3c.2-.3.4-.6.6-.9.6-.8,1.2-1.6,1.7-2.3.4-.5.8-1,1.1-1.4-.5-.8-.9-1.7-1.3-2.6-1.2,1.4-2.2,2.7-3.5,4.4-.8,1.1-1.5,2.1-2.3,3.2,1.9,1.7,4.1,3.1,6.5,3.8-1.1-1.3-2.1-2.7-3-4.3Z"/><path class="st0" d="M20.3,15.6c-.8-.7-1.5-1.3-2-1.8-.7.6-2,1.7-2.8,2.5.3.9.7,1.8,1.1,2.6.6-.6,1.2-1.2,1.7-1.7.5.5,1.1,1,1.7,1.7.4-.9.8-1.8,1.1-2.6-.3-.3-.5-.5-.8-.8Z"/><path class="st0" d="M26.1,20.3c.6.7,1.2,1.5,1.9,2.4,1.2-2.9,2-5.8,2.4-8.5-.8-.4-2.8-1.6-3.6-2.1-.1.9-.3,1.8-.5,2.8l1.1.7c-.3,1.4-.7,3-1.4,4.8Z"/><path class="st0" d="M21.4,32.7c.3-.2.5-.5.7-.7,1.3-1.4,2.5-3,3.5-4.7-.6-.8-1.2-1.6-1.7-2.3-.5.9-1.1,1.9-1.7,2.7-.8-.6-1.5-1.3-2.2-2-.6-.6-1.2-1.3-1.8-2-1.5-2-2.8-4.3-3.6-6.6-.2-.6-.4-1.2-.6-1.8-.2-.8-.4-1.6-.6-2.4l4.7-2.7,4.7,2.7c-.2,1.2-.6,2.5-1,3.9,0,.1,0,.2-.1.3-.4,1.2-1,2.4-1.6,3.5-.4.8-.9,1.5-1.4,2.2.5.7,1.1,1.4,1.8,2.1,2.1-2.9,3.7-6.4,4.6-9.8.3-1.3.5-2.5.7-3.6-2.3-1.3-5.4-3.1-7.6-4.4-2.3,1.3-5.4,3.1-7.6,4.4.1,1.3.4,2.7.8,4.2,0,.3.2.6.3,1,1.4,4.5,3.9,8.6,7.3,11.8.5.4,1,.9,1.5,1.2-.7.8-1.5,1.5-2.3,2.2-.8-.7-1.6-1.4-2.3-2.2.5-.4,1.1-.9,1.6-1.3-.6-.6-1.2-1.3-1.8-2-.5.4-1,.9-1.5,1.3-.6-.8-1.2-1.7-1.7-2.7-.6.7-1.1,1.5-1.7,2.3.2.3.4.6.6.9.9,1.4,1.9,2.6,3,3.8,1.2,1.2,2.4,2.2,3.8,3.2,1.1-.8,2.1-1.5,3.1-2.4Z"/><path class="st0" d="M26.9,27.3c-.2-.3-.4-.6-.6-.9-.6-.8-1.2-1.6-1.7-2.3-.4-.5-.8-1-1.1-1.4.5-.8.9-1.7,1.3-2.6,1.2,1.4,2.2,2.7,3.5,4.4.8,1.1,1.5,2.1,2.3,3.2-1.9,1.7-4.1,3.1-6.5,3.8,1.1-1.3,2.1-2.7,3-4.3Z"/></svg>`),
+            Amethyst: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.7 42.4"><defs><style>.st0{fill:#c9b78d;fill-rule:evenodd}.st1{fill:#7c4182}.st2{fill:#292a47}</style></defs><path class="st2" d="M0,10.6v21.2l18.4,10.6,18.4-10.6V10.6L18.4,0,0,10.6Z"/><path class="st2" d="M1.8,11.6v19.1l16.5,9.5,16.5-9.5V11.6L18.3,2.1,1.8,11.6Z"/><path class="st0" d="M3,30l15.3,8.8,15.3-8.8V12.3L18.3,3.5,3,12.3v17.7ZM18.3,2.1l16.5,9.5v19.1l-16.5,9.5L1.8,30.7V11.6L18.3,2.1Z"/><path class="st1" d="M27.9,29.7c1.7-1.9,2.5-4.3,2.5-6.6,0-3.3-1.2-5.8-1.5-6.5-.2-.7.3-1,.9-.4.2.2.4.4.5.6-.3-1-.8-2.2-2-3.1-2.8-2-6.1-1.9-6.5-1.9-.4,0-1-.2,0-.6.4-.1.8-.2,1.1-.1-1-.6-2.8-.9-4.9,0-2.3.9-3.3,2.9-3.6,3.5-.3.6-.3,1-.5.8-.3-.2-.2-.8-.2-.8,0,0,0-.3.3-.8-.5.4-1.5,1.6-1.5,3.4s1.9,3.8,1.9,3.8c0,0,.6-.2,1.5,0-1,.1-1.5.8-1.7,1.2-.3.5-1.8,1.2-3-.7-.7-1.1-.3-2.4,0-3.1-.3.1-.6.3-.9.7,0-.9.2-3.3,1.6-5.3,1.9-2.5,4.4-3.7,4.4-3.7,1.5-.9,3.3-1.2,4.5-1.3-2.5-.5-5,0-7,1.1-2.8,1.6-4.4,4-4.9,4.5-.5.6-1,.3-.8-.6,0-.3.2-.6.3-.8-.7.7-1.5,1.8-1.6,3.3-.4,3.5,1.4,6.3,1.6,6.6.2.3.3,1-.5.3-.3-.3-.5-.6-.7-.9,0,1.2.7,2.9,2.5,4.3,2,1.5,4.2,1.4,4.8,1.3.7,0,1-.2,1,0,0,.3-.6.6-.6.6,0,0-.3.2-.9.2.6.2,2.1.5,3.7-.4,2.1-1.2,2.4-3.5,2.4-3.5,0,0-.5-.4-.8-1.3.6.8,1.4.9,1.9.9.5,0,2,1,.8,2.9-.6,1.1-1.9,1.5-2.7,1.6.2.2.6.4,1,.5-.8.4-2.9,1.5-5.4,1.2-3.1-.4-5.4-2-5.4-2-1.5-.9-2.7-2.3-3.4-3.3.8,2.4,2.5,4.3,4.5,5.5,2.8,1.6,5.7,1.9,6.4,2,.7.1.7.7-.1,1-.3.1-.6.1-.8.1,1,.3,2.3.4,3.6-.2,3.2-1.4,4.8-4.3,4.9-4.7.2-.3.7-.7.5.3,0,.4-.3.8-.4,1.1,1-.6,2.2-2,2.5-4.3.3-2.5-.8-4.3-1.3-4.9-.4-.6-.7-.7-.4-.9.3-.2.8.2.8.2,0,0,.3.1.6.7-.1-.6-.6-2.1-2.2-3-2.1-1.2-4.3-.3-4.3-.3,0,0,0,.6-.7,1.3.4-.9,0-1.7-.2-2.1-.3-.5-.1-2.2,2.1-2.2,1.3,0,2.2.9,2.7,1.5,0-.3,0-.7-.1-1.1.8.4,2.8,1.8,3.8,4.1,1.2,2.9,1,5.7,1,5.7,0,1.7-.6,3.4-1.1,4.5Z"/></svg>`),
+            Emerald: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.7 42.4"><defs><style>.st0{fill:#329044}.st1{fill:#c9b78d;fill-rule:evenodd}.st2{fill:#292a47}</style></defs><path class="st2" d="M0,10.6v21.2l18.4,10.6,18.4-10.6V10.6L18.4,0,0,10.6Z"/><path class="st2" d="M1.8,11.6v19.1l16.5,9.5,16.5-9.5V11.6L18.3,2.1,1.8,11.6Z"/><path class="st1" d="M3,30l15.3,8.8,15.3-8.8V12.3L18.3,3.5,3,12.3v17.7ZM18.3,2.1l16.5,9.5v19.1l-16.5,9.5L1.8,30.7V11.6L18.3,2.1Z"/><path class="st0" d="M18.3,17.3h0c0,.1,0,0,0,0,.6-2.5,2.1-4.7,4.1-6h0s0,0,0,0c-1.8-.8-3.3-2.3-4.1-4.1h0c0,0,0,0,0,0-.8,1.8-2.3,3.3-4.1,4.1h0s0,0,0,0c2,1.3,3.5,3.4,4.1,6Z"/><path class="st0" d="M30.4,27.6v-4.2h0c-.7.4-1.7.6-2.8.6-2.4,0-5.3-1.5-6.9-2.3l.4.5c.2.2.4.5.6.8.6.8,1.4,1.7,1.9,2.3,1,1.1,3.1,2.9,6,2.8.1,0,.2,0,.3,0,.3-.1.5-.3.5-.4Z"/><path class="st0" d="M25.5,22.8c.8.2,1.6.3,2.3.3,1.1,0,2-.3,2.6-.7,0,0,0,0,0,0-.8-2.4-2.1-4.3-4-5.5-.6-.4-1.3-.7-1.8-.9,0,0,1.3,1.4,1.5,3.7.1,1.8-.7,3-.7,3Z"/><path class="st0" d="M16,19.5c1.5,2.1,2.5,4.8,2.8,7.6.4,3.7-.1,6.6-.5,8.1l10.6-6.1h-.2c-2.9-.2-4.9-2-5.9-3.2-.5-.6-1.2-1.5-1.9-2.3-.4-.5-.8-1-1.1-1.4-.9-1.2-2.2-2.3-2.8-2.8-1.4-1.2-2.5-1.8-3.2-2.1.8.6,1.5,1.4,2.1,2.3Z"/><path class="st0" d="M18,28.8h0c-1.8.5-3.8-.3-4.7-1.7-.9-1.4-.5-2.9-.4-3.4-1,.6-3.1,2-2.1,5.1h0c.1.4.4,1.3,1.2,2.2.4.5,1.3,1.3,4,2.9l1.3.7s0,0,.1,0c.3-1.2.7-3.3.5-5.9Z"/><path class="st0" d="M9.9,29h0c-.8-2.7.3-4.2,1.2-5.2.6-.6,1.2-1,1.6-1.3-1.1-.3-2.2-.3-3.2.2-2,.8-3.1,2.3-3.2,4.3,0,.3,0,.5,0,.7,0,0,0,.1,0,.1,0,.1.1.2.2.3,0,0,0,0,.1,0,0,0,3,1.7,4.3,2.5-.6-.8-.8-1.5-.9-1.8Z"/><path class="st0" d="M9.1,21.9c1.7-.7,3.6-.6,5.4.4.2.1.4.2.6.4.6.3,1,.7,1.2.9.6.5,1,1.1,1.2,1.3,0-.1,0-.2,0-.4-.2-.6-.4-1.2-.6-1.7-.2-.5-.5-1.1-.8-1.6-.3-.5-.6-.9-.9-1.4-.3-.4-.6-.8-1-1.2-.3-.3-.7-.6-1.1-.9-.4-.2-.7-.5-1.1-.6-.3-.1-.6-.2-1-.3-.3,0-.7,0-1,0,0,0-.2,0-.2,0-.4,0-.8.2-1.2.4-.3.2-.7.4-1,.6-.3.2-.5.4-.7.6-.2.1-.4.3-.5.5h0c-.1.1-.2.3-.2.4v4.6c.6-.9,1.5-1.7,2.9-2.3Z"/><path class="st0" d="M28.2,15.2c-1.3-1.6-2.9-2.9-4.3-3.4h0s0,0-.2,0c-1.6.7-2.7,2-3.2,2.8.2,0,.3,0,.3,0h0c.5,0,1,0,1.5,0,.2,0,.5,0,.9.1.5,0,1.9.4,3.4,1.3,1.1.7,2.6,2,3.7,4.1,0-1.4-.9-3.3-2.2-4.9Z"/></svg>`),
+            Ruby: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.7 42.4"><defs><style>.st0{fill:#c9b78d;fill-rule:evenodd}.st1{fill:#d50037}.st2{fill:#292a47}</style></defs><path class="st2" d="M0,10.6v21.2l18.4,10.6,18.4-10.6V10.6L18.4,0,0,10.6Z"/><path class="st2" d="M1.8,11.6v19.1l16.5,9.5,16.5-9.5V11.6L18.3,2.1,1.8,11.6Z"/><path class="st0" d="M3,30l15.3,8.8,15.3-8.8V12.3L18.3,3.5,3,12.3v17.7ZM18.3,2.1l16.5,9.5v19.1l-16.5,9.5L1.8,30.7V11.6L18.3,2.1Z"/><path class="st1" d="M21.6,11.8c-3.6,8.1-13.5,14.9-16.7,17,3.4-1.8,14.3-6.9,23.1-6-2.3,5.2-5.7,9-9.8,12.3l12.1-7v-14l-12.1-7-12.1,7c4.9-1.9,9.9-3,15.6-2.4Z"/><path class="st1" d="M12.8,16.6c.6,1.1-2.8,5.4-7.5,8.4,2.4-1.2,6.1-3.8,8.9-6.2,2-1.6,3.2-3.3,4.4-5.2-4.4.1-8.3,1.5-11.6,3.1,3.2-1,5.4-.9,5.9-.2Z"/><path class="st1" d="M19.4,28c-.6-1.1-6.1-.3-11,2.3,2.2-1.5,6.4-3.3,9.8-4.6,2.4-.9,4.4-1.1,6.7-1.2-2.3,3.7-5.5,6.4-8.5,8.5,2.5-2.3,3.5-4.2,3.1-5Z"/></svg>`),
+            Sapphire: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.7 42.4"><defs><style>.st0{fill:#c9b78d;fill-rule:evenodd}.st1{fill:#0093c9}.st2{fill:#292a47}</style></defs><path class="st2" d="M0,10.6v21.2l18.4,10.6,18.4-10.6V10.6L18.4,0,0,10.6Z"/><path class="st2" d="M1.8,11.6v19.1l16.5,9.5,16.5-9.5V11.6L18.3,2.1,1.8,11.6Z"/><path class="st0" d="M3,30l15.3,8.8,15.3-8.8V12.3L18.3,3.5,3,12.3v17.7ZM18.3,2.1l16.5,9.5v19.1l-16.5,9.5L1.8,30.7V11.6L18.3,2.1Z"/><path class="st1" d="M27.4,20.4c-2.5-2.8-5.5-4.5-6.8-5.2,5.1-1.9,6.8,0,6.8,0,1.2,1.1.4,2.7,0,3.5.6.6,1.1,1.1,1.4,1.6.6-.9,1.3-2.1,1.5-3.4.4-2.8-1.9-6.4-10.6-3.4-5.1,1.8-8.2,4.3-10,6.1-1.5-2.2-1.5-4,.3-4.9,1.1-.5,2.8-.4,4.4,0,.3-.2,1.2-.7,2.5-1.3-4-1.6-8.9-1.6-10.3.9-1.7,3,2.6,7.5,2.6,7.5,2.5,2.8,5.5,4.5,6.8,5.2-5.1,1.9-6.8,0-6.8,0-1.1-1.1-.4-2.7,0-3.5-.6-.6-1.1-1.1-1.4-1.6-.6.9-1.3,2.1-1.5,3.4-.4,2.8,1.9,6.4,10.6,3.4,5.1-1.8,8.2-4.3,10-6.1,1.5,2.2,1.6,4-.3,4.9-1.1.5-2.8.4-4.4,0-.3.2-1.2.7-2.5,1.3,4,1.6,8.9,1.6,10.3-.9,1.7-3-2.6-7.5-2.6-7.5ZM13.8,23.6c-1-.7-2-1.6-2.9-2.5,1-.9,2-1.8,2.9-2.5,1.3-.9,2.5-1.3,3.3-1.4,0,2.2-.9,3.4-2.2,3.9,1.3.5,2.1,1.7,2.2,3.9-.8-.1-2-.5-3.3-1.4ZM22.7,23.6c-1.3.9-2.5,1.3-3.3,1.4,0-2.2.9-3.4,2.2-3.9-1.3-.5-2.1-1.7-2.2-3.9.8.1,2,.5,3.3,1.4,1,.7,2,1.6,2.9,2.5-1,.9-2,1.8-2.9,2.5Z"/><path class="st1" d="M18.3,29.3c-.7.3-1.3.5-1.9.7-.7.2-1.4.4-1.9.6l3.8,4.5,3.8-4.5c-1.1-.2-2.4-.6-3.8-1.3Z"/><path class="st1" d="M18.2,13c.7-.3,1.3-.5,1.9-.7.7-.2,1.4-.4,1.9-.6l-3.8-4.5-3.8,4.5c1.1.2,2.4.6,3.8,1.3Z"/></svg>`),
+            Steel: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.7 42.4"><defs><style>.st0{fill:#97a3ae}.st1{fill:#c9b78d;fill-rule:evenodd}.st2{fill:#292a47}</style></defs><path class="st2" d="M0,10.6v21.2l18.4,10.6,18.4-10.6V10.6L18.4,0,0,10.6Z"/><path class="st2" d="M1.8,11.6v19.1l16.5,9.5,16.5-9.5V11.6L18.3,2.1,1.8,11.6Z"/><path class="st1" d="M3,30l15.3,8.8,15.3-8.8V12.3L18.3,3.5,3,12.3v17.7ZM18.3,2.1l16.5,9.5v19.1l-16.5,9.5L1.8,30.7V11.6L18.3,2.1Z"/><path class="st0" d="M30.5,24.2l-1.5-.8v-4.2l1-1.2v-3.6l-4.7-2.7v9.6l-1.5-.9v-10.2l-4.7-2.7v20.1l4.5-4.4-2.4,5.2,6.3-1.3-9.1,5-9.1-5,6.3,1.3-2.4-5.2,4.5,4.4V7.5l-4.7,2.7v10.2l-1.5.9v-9.6l-4.7,2.7v3.6l1,1.2v4.2l-1.5.8v3.9l12.1,7,12.1-7v-3.9Z"/></svg>`)
+        };
+
+        let currentLanguage = 'fr';
+        let allCards = [];
+        let allSets = {};
+        let currentPage = 1;
+        const CARDS_PER_PAGE = 48;
+        let uniqueCardList = [];
+        let currentVariants = [];
+        let currentVariantIndex = 0;
+
+        const colorOrder = ['Amber', 'Amethyst', 'Emerald', 'Ruby', 'Sapphire', 'Steel'];
+        let selectedColors = new Set();
+
+        function getEnglishColorName(translated) {
+            if (!translated) return '';
+            const t = translations[currentLanguage].colorNames;
+            for (const [eng, loc] of Object.entries(t)) {
+                if (loc.toLowerCase() === String(translated).toLowerCase()) return eng;
+            }
+            return translated;
+        }
+
+        function buildColorButtons() {
+            const container = document.getElementById('colorButtonsContainer');
+            container.innerHTML = '';
+            colorOrder.forEach(color => {
+                const btn = document.createElement('div');
+                btn.className = 'color-btn';
+                btn.style.backgroundImage = `url('${colorSVGDataURIs[color]}')`;
+                btn.title = translations[currentLanguage].colorNames[color] || color;
+                btn.dataset.color = color;
+                btn.addEventListener('click', () => toggleColor(color, btn));
+                container.appendChild(btn);
+            });
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'clear-colors-btn';
+            clearBtn.textContent = '✕';
+            clearBtn.addEventListener('click', clearColorSelection);
+            container.appendChild(clearBtn);
+        }
+
+        function toggleColor(color, btn) {
+            if (selectedColors.has(color)) {
+                selectedColors.delete(color);
+                btn.classList.remove('active');
+            } else {
+                selectedColors.add(color);
+                btn.classList.add('active');
+            }
+            applyFiltersAndDisplay();
+        }
+
+        function clearColorSelection() {
+            selectedColors.clear();
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            applyFiltersAndDisplay();
+        }
+
+        function applyUILanguage(lang) {
+            const t = translations[lang];
+            document.getElementById('loadingText').textContent = t.loading;
+            document.querySelector('#set option[value="all"]').textContent = t.allSets;
+            document.querySelector('#cost option[value="all"]').textContent = t.allCosts;
+            document.querySelector('#sort option[value="name-asc"]').textContent = t.sortNameAsc;
+            document.querySelector('#sort option[value="name-desc"]').textContent = t.sortNameDesc;
+            document.querySelector('#sort option[value="cost-asc"]').textContent = t.sortCostAsc;
+            document.querySelector('#sort option[value="cost-desc"]').textContent = t.sortCostDesc;
+            document.getElementById('prevPage').innerHTML = t.prevBtn;
+            document.getElementById('nextPage').innerHTML = t.nextBtn;
+            document.getElementById('modalTitle').textContent = t.modalTitle;
+            document.getElementById('prevVariant').textContent = t.prevVariantText;
+            document.getElementById('nextVariant').textContent = t.nextVariantText;
+            updatePaginationText();
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                const color = btn.dataset.color;
+                btn.title = t.colorNames[color] || color;
+            });
+        }
+
+        function updatePaginationText() {
+            const t = translations[currentLanguage];
+            const totalPages = Math.ceil(uniqueCardList.length / CARDS_PER_PAGE) || 1;
+            if (totalPages > 1) {
+                document.getElementById('pageInfo').textContent = `${t.page} ${currentPage} ${t.of} ${totalPages}`;
+            }
+        }
+
+        // ---------- CHARGEMENT DES CARTES (fetch + proxy) ----------
+        async function fetchCardsData(lang) {
+            const url = `https://lorcanajson.org/files/current/${lang}/allCards.json`;
+            // Essai direct
+            try {
+                const res = await fetch(url);
+                if (res.ok) return await res.json();
+            } catch (e) { /* ignore */ }
+            // Essai via proxy CORS
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error(`Erreur proxy : ${res.status}`);
+            return await res.json();
+        }
+
+        async function loadCards(lang) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error')?.remove();
+            try {
+                const data = await fetchCardsData(lang);
+                allCards = data.cards || [];
+                allSets = data.sets || {};
+                allCards.forEach(card => {
+                    const subtypes = card.subtypesText || (card.subtypes ? card.subtypes.join(' ') : '');
+                    const artists = card.artistsText || (card.artists ? card.artists.join(' ') : '');
+                    const story = card.story || '';
+                    const flavor = card.flavorText || '';
+                    card.searchText = `${card.name} ${card.version} ${card.fullName} ${card.simpleName} ${subtypes} ${artists} ${story} ${flavor}`.toLowerCase();
+                });
+                populateSetSelect();
+                updateStats();
+                applyFiltersAndDisplay();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('stats').style.display = 'flex';
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `<div class="error">Erreur : ${err.message}<br><button onclick="loadCards('${lang}')">Réessayer</button></div>`;
+            }
+        }
+
+        function populateSetSelect() {
+            const setSelect = document.getElementById('set');
+            const t = translations[currentLanguage];
+            setSelect.innerHTML = `<option value="all">${t.allSets}</option>`;
+            Object.entries(allSets).forEach(([id, set]) => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = `${set.number} - ${set.name}`;
+                setSelect.appendChild(opt);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('totalCards').textContent = allCards.length;
+            document.getElementById('totalSets').textContent = Object.keys(allSets).length;
+        }
+
+        function applyFiltersAndDisplay() {
+            if (!allCards.length) return;
+            const selectedSet = document.getElementById('set').value;
+            const selectedCost = document.getElementById('cost').value;
+            const searchTerm = document.getElementById('search').value.toLowerCase().trim();
+            const [sortField, sortOrder] = document.getElementById('sort').value.split('-');
+
+            let filtered = allCards.slice();
+            if (selectedSet !== 'all') filtered = filtered.filter(c => c.setCode === selectedSet);
+            if (selectedColors.size > 0) {
+                filtered = filtered.filter(c => {
+                    const cardColors = c.color.split('-').map(x => getEnglishColorName(x.trim()));
+                    return cardColors.some(color => selectedColors.has(color));
+                });
+            }
+            if (selectedCost !== 'all') {
+                if (selectedCost === '9+') filtered = filtered.filter(c => (c.cost || 0) >= 9);
+                else filtered = filtered.filter(c => (c.cost || 0) === parseInt(selectedCost));
+            }
+            if (searchTerm) filtered = filtered.filter(c => c.searchText.includes(searchTerm));
+
+            filtered.sort((a, b) => {
+                let valA = sortField === 'name' ? (a.name || '').toLowerCase() : (a.cost || 0);
+                let valB = sortField === 'name' ? (b.name || '').toLowerCase() : (b.cost || 0);
+                if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            const groups = new Map();
+            filtered.forEach(card => {
+                const key = card.fullName || `${card.name} - ${card.version}`;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(card);
+            });
+            uniqueCardList = Array.from(groups, ([, variants]) => ({ representative: variants[0], variants }));
+            document.getElementById('displayedCards').textContent = uniqueCardList.length;
+            currentPage = 1;
+            renderPage();
+        }
+
+        function renderPage() {
+            const totalPages = Math.ceil(uniqueCardList.length / CARDS_PER_PAGE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * CARDS_PER_PAGE;
+            const pageCards = uniqueCardList.slice(start, start + CARDS_PER_PAGE);
+            const grid = document.getElementById('cardsGrid');
+            if (pageCards.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted)">Aucune carte trouvée</div>';
+            } else {
+                let html = '';
+                pageCards.forEach(group => {
+                    const card = group.representative;
+                    const img = card.images?.thumbnail || card.images?.full || '';
+                    const safeName = (card.fullName || card.name || '').replace(/"/g, '&quot;');
+                    html += `<div class="card-frame" data-color="${card.color || ''}" data-fullname="${safeName}">
+                        <div class="card"><img src="${img}" alt="${safeName}" class="card-image" loading="lazy"></div>
+                    </div>`;
+                });
+                grid.innerHTML = html;
+            }
+            const pagDiv = document.getElementById('pagination');
+            if (totalPages > 1) {
+                pagDiv.style.display = 'flex';
+                updatePaginationText();
+                document.getElementById('prevPage').disabled = currentPage === 1;
+                document.getElementById('nextPage').disabled = currentPage === totalPages;
+            } else {
+                pagDiv.style.display = 'none';
+            }
+        }
+
+        function getColorStyle(colorField) {
+            if (!colorField) return 'var(--accent-gold)';
+            const colors = colorField.split('-').map(c => getEnglishColorName(c.trim()));
+            const hexes = colors.map(c => colorHexMap[c]).filter(Boolean);
+            if (hexes.length === 1) return hexes[0];
+            if (hexes.length >= 2) return `linear-gradient(135deg, ${hexes[0]}, ${hexes[1]})`;
+            return 'var(--accent-gold)';
+        }
+
+        // Événements
+        document.getElementById('set').addEventListener('change', applyFiltersAndDisplay);
+        document.getElementById('cost').addEventListener('change', applyFiltersAndDisplay);
+        document.getElementById('search').addEventListener('input', applyFiltersAndDisplay);
+        document.getElementById('sort').addEventListener('change', applyFiltersAndDisplay);
+        document.getElementById('language').addEventListener('change', (e) => {
+            currentLanguage = e.target.value;
+            applyUILanguage(currentLanguage);
+            loadCards(currentLanguage);
+        });
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 1) { currentPage--; renderPage(); window.scrollTo(0,0); }
+        });
+        document.getElementById('nextPage').addEventListener('click', () => {
+            if (currentPage < Math.ceil(uniqueCardList.length / CARDS_PER_PAGE)) { currentPage++; renderPage(); window.scrollTo(0,0); }
+        });
+        document.getElementById('cardsGrid').addEventListener('click', (e) => {
+            const frame = e.target.closest('.card-frame');
+            if (!frame) return;
+            const group = uniqueCardList.find(g => g.representative.fullName === frame.dataset.fullname);
+            if (group) openVariantModal(group.variants, 0);
+        });
+        document.getElementById('cardsGrid').addEventListener('mouseover', (e) => {
+            const frame = e.target.closest('.card-frame');
+            if (!frame) return;
+            frame.style.background = getColorStyle(frame.dataset.color || '');
+        });
+        document.getElementById('cardsGrid').addEventListener('mouseout', (e) => {
+            const frame = e.target.closest('.card-frame');
+            if (!frame) return;
+            frame.style.background = '';
+        });
+
+        function openVariantModal(variants, index) {
+            currentVariants = variants;
+            currentVariantIndex = index;
+            showVariantAtIndex();
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('variantNav').style.display = variants.length > 1 ? 'flex' : 'none';
+        }
+
+        function showVariantAtIndex() {
+            const card = currentVariants[currentVariantIndex];
+            const t = translations[currentLanguage];
+            document.getElementById('modalTitle').textContent = card.fullName || card.name;
+            const img = card.images?.full || card.images?.thumbnail || '';
+            const subtypes = card.subtypesText || (card.subtypes ? card.subtypes.join(' • ') : '-');
+            const artists = card.artistsText || (card.artists ? card.artists.join(', ') : '-');
+            const flavor = card.flavorText || '';
+            const displayColor = card.color.split('-').map(c => t.colorNames[c] || c).join(' / ') || '-';
+            const type = t.types[card.type] || card.type || '-';
+            const rarity = t.rarities[card.rarity] || card.rarity || '-';
+            const inkable = card.inkwell ? 'Encrable' : 'Non encrable';
+
+            const html = `
+                <div><img src="${img}" alt="${card.fullName}" class="modal-image"></div>
+                <div class="modal-details">
+                    <h3>${card.name || ''} ${card.version ? `<span style="font-size:14px;font-weight:normal;color:var(--text-muted)">— ${card.version}</span>` : ''}</h3>
+                    <div class="modal-detail-grid">
+                        <div class="modal-detail"><span class="modal-detail-label">Type</span><span class="modal-detail-value">${type}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Sous-types</span><span class="modal-detail-value">${subtypes}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Couleur</span><span class="modal-detail-value">${displayColor}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Coût / Encre</span><span class="modal-detail-value">${card.cost || 0} (${inkable})</span></div>
+                        ${card.strength !== undefined ? `<div class="modal-detail"><span class="modal-detail-label">Force</span><span class="modal-detail-value">${card.strength}</span></div>` : ''}
+                        ${card.willpower !== undefined ? `<div class="modal-detail"><span class="modal-detail-label">Volonté</span><span class="modal-detail-value">${card.willpower}</span></div>` : ''}
+                        ${card.lore !== undefined ? `<div class="modal-detail"><span class="modal-detail-label">Lore</span><span class="modal-detail-value">${card.lore}</span></div>` : ''}
+                        <div class="modal-detail"><span class="modal-detail-label">Rareté</span><span class="modal-detail-value">${rarity}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Extension</span><span class="modal-detail-value">${allSets[card.setCode]?.name || card.setCode || '-'}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Numéro</span><span class="modal-detail-value">${card.number || '?'}/${allSets[card.setCode]?.cardCounts?.base || '?'}</span></div>
+                        <div class="modal-detail"><span class="modal-detail-label">Artiste(s)</span><span class="modal-detail-value">${artists}</span></div>
+                    </div>
+                    ${flavor ? `<div class="modal-text">"${flavor}"</div>` : ''}
+                    ${card.externalLinks ? `<div class="modal-links">${card.externalLinks.tcgPlayerUrl ? `<a href="${card.externalLinks.tcgPlayerUrl}" target="_blank">TCGPlayer ↗</a>` : ''}${card.externalLinks.cardmarketUrl ? `<a href="${card.externalLinks.cardmarketUrl}" target="_blank">Cardmarket ↗</a>` : ''}</div>` : ''}
+                </div>`;
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('variantCount').textContent = `${currentVariantIndex + 1} / ${currentVariants.length}`;
+            document.getElementById('prevVariant').disabled = currentVariantIndex === 0;
+            document.getElementById('nextVariant').disabled = currentVariantIndex === currentVariants.length - 1;
+        }
+
+        function closeModal() { document.getElementById('modal').classList.remove('active'); }
+        document.getElementById('prevVariant').addEventListener('click', () => {
+            if (currentVariantIndex > 0) { currentVariantIndex--; showVariantAtIndex(); }
+        });
+        document.getElementById('nextVariant').addEventListener('click', () => {
+            if (currentVariantIndex < currentVariants.length - 1) { currentVariantIndex++; showVariantAtIndex(); }
+        });
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modal')) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+            if (document.getElementById('modal').classList.contains('active')) {
+                if (e.key === 'ArrowLeft') document.getElementById('prevVariant').click();
+                if (e.key === 'ArrowRight') document.getElementById('nextVariant').click();
+            }
+        });
+
+        // Initialisation
+        buildColorButtons();
+        applyUILanguage('fr');
+        loadCards('fr');
+    </script>
+</body>
+</html>
