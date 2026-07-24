@@ -69,31 +69,27 @@ export function createFiltersBar({ onFilterChange }) {
     if (store.cardDB.ready) populateSets();
     else store.on('data-loaded', populateSets);
 
-    // Création des boutons de couleur
+    // Création des boutons de couleur (corrigés)
     const colorContainer = container.querySelector('#colorButtonsContainer');
-colorOrder.forEach(color => {
-    const btn = document.createElement('div');
-    btn.className = 'color-btn';
-    btn.style.backgroundImage = `url(${colorSVGDataURIs[color]})`;
-    btn.style.backgroundSize = 'contain';
-    btn.style.backgroundRepeat = 'no-repeat';
-    btn.style.backgroundPosition = 'center';
-    btn.style.width = '36px';
-    btn.style.height = '36px';
-    btn.style.border = '2px solid transparent'; // sera géré par la classe active
-    btn.style.borderRadius = '0'; // ou '4px' selon préférence, mais pas cercle
-    btn.style.cursor = 'pointer';
-    btn.style.transition = 'all 0.2s ease';
-    btn.title = translations[store.language].colorNames[color] || color;
-    btn.dataset.color = color;
-    btn.addEventListener('click', () => {
-        btn.classList.toggle('active');
-        if (onFilterChange) onFilterChange();
+    colorOrder.forEach(color => {
+        const btn = document.createElement('div');
+        btn.className = 'color-btn';
+        // Utilisation directe du SVG de la couleur, pas de fond hexagonal
+        btn.style.backgroundImage = `url(${colorSVGDataURIs[color]})`;
+        btn.style.backgroundSize = 'contain';
+        btn.style.backgroundRepeat = 'no-repeat';
+        btn.style.backgroundPosition = 'center';
+        btn.style.backgroundColor = 'transparent';
+        btn.title = translations[store.language].colorNames[color] || color;
+        btn.dataset.color = color;
+        btn.addEventListener('click', () => {
+            btn.classList.toggle('active');
+            if (onFilterChange) onFilterChange();
+        });
+        colorContainer.appendChild(btn);
     });
-    colorContainer.appendChild(btn);
-});
 
-    // Boutons de coût
+    // Boutons de coût (inchangés)
     const costContainer = container.querySelector('#costButtonsContainer');
     for (let i = 1; i <= 8; i++) {
         const btn = document.createElement('div');
@@ -122,7 +118,7 @@ colorOrder.forEach(color => {
     });
     costContainer.appendChild(btn9);
 
-    // Bouton encre
+    // Bouton encre (inchangé)
     const inkContainer = container.querySelector('#inkableButton');
     const inkBtn = document.createElement('div');
     inkBtn.className = 'inkable-btn';
@@ -142,13 +138,11 @@ colorOrder.forEach(color => {
     store.on('language-changed', () => {
         setGroup.querySelector('label').textContent = translations[store.language].allSets;
         sortGroup.querySelector('label').textContent = translations[store.language].allSets;
-        // Actualiser les options de tri
         const sortSelect = container.querySelector('#sort');
         sortSelect.options[0].textContent = translations[store.language].sortNameAsc;
         sortSelect.options[1].textContent = translations[store.language].sortNameDesc;
         sortSelect.options[2].textContent = translations[store.language].sortCostAsc;
         sortSelect.options[3].textContent = translations[store.language].sortCostDesc;
-        // Mettre à jour les titres des couleurs
         container.querySelectorAll('.color-btn').forEach(btn => {
             const color = btn.dataset.color;
             btn.title = translations[store.language].colorNames[color] || color;
