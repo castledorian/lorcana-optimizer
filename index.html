@@ -151,7 +151,7 @@
             border-color: var(--accent-gold);
         }
 
-        /* Rangée de boutons de couleur (comme duels.ink) */
+        /* Boutons de couleur */
         .color-buttons {
             display: flex;
             gap: 6px;
@@ -726,35 +726,18 @@
             }
         }
 
-        // ---------- CHARGEMENT DES CARTES (fichier local, avec fallback proxies) ----------
-        async function fetchCardsData() {
-            // 1. Essayer le fichier local lorcana-data.json
-            try {
-                const res = await fetch('lorcana-data.json');
-                if (res.ok) return await res.json();
-            } catch (e) { /* ignore */ }
-
-            // 2. Fallback : utiliser les proxies (si le fichier local n'existe pas)
-            const url = `https://lorcanajson.org/files/current/fr/allCards.json`;
-            const proxies = [
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                `https://corsproxy.io/?${encodeURIComponent(url)}`,
-                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
-            ];
-            for (const proxyUrl of proxies) {
-                try {
-                    const res = await fetch(proxyUrl);
-                    if (res.ok) return await res.json();
-                } catch (e) { /* ignore */ }
-            }
-            throw new Error("Impossible de charger les cartes.");
+        // ---------- CHARGEMENT DES CARTES (fichier local par langue) ----------
+        async function fetchCardsData(lang) {
+            const res = await fetch(`${lang}.json`);
+            if (!res.ok) throw new Error(`Erreur chargement ${lang}.json`);
+            return await res.json();
         }
 
-        async function loadCards() {
+        async function loadCards(lang) {
             document.getElementById('loading').style.display = 'block';
             document.getElementById('error')?.remove();
             try {
-                const data = await fetchCardsData();
+                const data = await fetchCardsData(lang);
                 allCards = data.cards || [];
                 allSets = data.sets || {};
                 allCards.forEach(card => {
@@ -770,7 +753,7 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('stats').style.display = 'flex';
             } catch (err) {
-                document.getElementById('loading').innerHTML = `<div class="error">Erreur : ${err.message}<br><button onclick="loadCards()">Réessayer</button></div>`;
+                document.getElementById('loading').innerHTML = `<div class="error">Erreur : ${err.message}<br><button onclick="loadCards('${lang}')">Réessayer</button></div>`;
             }
         }
 
@@ -880,8 +863,7 @@
         document.getElementById('language').addEventListener('change', (e) => {
             currentLanguage = e.target.value;
             applyUILanguage(currentLanguage);
-            // Recharge la page pour changer la langue (car les données sont statiques pour une langue)
-            location.reload();
+            loadCards(currentLanguage);
         });
         document.getElementById('prevPage').addEventListener('click', () => {
             if (currentPage > 1) { currentPage--; renderPage(); window.scrollTo(0,0); }
@@ -974,7 +956,7 @@
         // Initialisation
         buildColorButtons();
         applyUILanguage('fr');
-        loadCards();
+        loadCards('fr');
     </script>
 </body>
 </html>
