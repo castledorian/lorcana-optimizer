@@ -71,26 +71,27 @@ export function createFiltersBar({ onFilterChange }) {
 
     // Création des boutons de couleur
     const colorContainer = container.querySelector('#colorButtonsContainer');
-    colorOrder.forEach(color => {
-        const btn = document.createElement('div');
-        btn.className = 'color-btn';
-        btn.style.backgroundImage = `url('${costHexSVG}')`;
-        btn.style.backgroundSize = 'cover';
-        const icon = document.createElement('img');
-        icon.src = colorSVGDataURIs[color];
-        icon.style.width = '22px';
-        icon.style.height = '22px';
-        icon.style.position = 'absolute';
-        icon.style.pointerEvents = 'none';
-        btn.appendChild(icon);
-        btn.title = translations[store.language].colorNames[color] || color;
-        btn.dataset.color = color;
-        btn.addEventListener('click', () => {
-            btn.classList.toggle('active');
-            if (onFilterChange) onFilterChange();
-        });
-        colorContainer.appendChild(btn);
+colorOrder.forEach(color => {
+    const btn = document.createElement('div');
+    btn.className = 'color-btn';
+    btn.style.backgroundImage = `url(${colorSVGDataURIs[color]})`;
+    btn.style.backgroundSize = 'contain';
+    btn.style.backgroundRepeat = 'no-repeat';
+    btn.style.backgroundPosition = 'center';
+    btn.style.width = '36px';
+    btn.style.height = '36px';
+    btn.style.border = '2px solid transparent'; // sera géré par la classe active
+    btn.style.borderRadius = '0'; // ou '4px' selon préférence, mais pas cercle
+    btn.style.cursor = 'pointer';
+    btn.style.transition = 'all 0.2s ease';
+    btn.title = translations[store.language].colorNames[color] || color;
+    btn.dataset.color = color;
+    btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        if (onFilterChange) onFilterChange();
     });
+    colorContainer.appendChild(btn);
+});
 
     // Boutons de coût
     const costContainer = container.querySelector('#costButtonsContainer');
