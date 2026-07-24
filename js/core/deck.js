@@ -1,4 +1,4 @@
-class Deck {
+export default class Deck {
     constructor() {
         this.cards = []; // { fullName: string, quantity: number }
     }
@@ -65,5 +65,3 @@ class Deck {
         return errors;
     }
 }
-
-export default Deck;
