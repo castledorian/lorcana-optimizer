@@ -4,17 +4,22 @@ class Store {
         this.cardDB = null;          // Instance de CardDatabase
         this.language = 'fr';
         this.currentDeck = null;     // Instance de Deck
-        this.listeners = new Map();
+        this.listeners = new Map(); // event -> Set(callback)
     }
 
     on(event, callback) {
-        if (!this.listeners.has(event)) this.listeners.set(event, []);
-        this.listeners.get(event).push(callback);
+        if (!this.listeners.has(event)) this.listeners.set(event, new Set());
+        this.listeners.get(event).add(callback);
+    }
+
+    off(event, callback) {
+        const cbs = this.listeners.get(event);
+        if (cbs) cbs.delete(callback);
     }
 
     emit(event, data) {
-        const cbs = this.listeners.get(event) || [];
-        cbs.forEach(cb => cb(data));
+        const cbs = this.listeners.get(event);
+        if (cbs) cbs.forEach(cb => cb(data));
     }
 
     setLanguage(lang) {
