@@ -1,8 +1,7 @@
-// js/router.js
 import { store } from './store.js';
 
 const routes = {};
-let currentView = null; // référence à la vue active
+let currentView = null;
 
 export function registerRoute(hash, viewFactory) {
     routes[hash] = viewFactory;
@@ -13,18 +12,42 @@ function resolveRoute() {
     const factory = routes[hash];
     if (!factory) return;
 
-    // Destruction de la vue précédente
-    if (currentView && currentView.destroy) {
-        currentView.destroy();
-        currentView = null;
+    const app = document.getElementById('app');
+    if (!app) return;
+
+    // Détruire la vue précédente proprement
+    if (currentView && typeof currentView.destroy === 'function') {
+        try {
+            currentView.destroy();
+        } catch (e) {
+            console.error('Erreur lors de la destruction de la vue précédente :', e);
+        }
+    }
+    currentView = null;
+
+    // Vider le conteneur principal
+    app.innerHTML = '';
+
+    // Créer la nouvelle vue
+    let newView;
+    try {
+        newView = factory();
+    } catch (e) {
+        console.error('Erreur lors de la création de la vue :', e);
+        app.innerHTML = '<div style="text-align:center;padding:60px;">Impossible de charger la page.</div>';
+        return;
     }
 
-    const app = document.getElementById('app');
-    app.innerHTML = '';
-    const view = factory();
-    currentView = view;
-    app.appendChild(view);
-    if (view.init) view.init();
+    app.appendChild(newView);
+    currentView = newView;
+
+    if (typeof newView.init === 'function') {
+        try {
+            newView.init();
+        } catch (e) {
+            console.error('Erreur lors de l’initialisation de la vue :', e);
+        }
+    }
 }
 
 window.addEventListener('hashchange', resolveRoute);
