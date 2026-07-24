@@ -6,19 +6,6 @@ export function createFiltersBar({ onFilterChange }) {
     const container = document.createElement('div');
     container.className = 'header-filters';
 
-    // Styles imposés pour éviter le passage à la ligne verticale
-    Object.assign(container.style, {
-        display: 'flex',
-        flexDirection: 'row',
-        flexWrap: 'nowrap',          // <-- empêche le retour à la ligne
-        gap: '12px',
-        alignItems: 'flex-end',
-        paddingTop: '8px',
-        borderTop: '1px solid rgba(255,255,255,0.05)',
-        overflowX: 'auto',          // <-- barre de défilement si les éléments débordent
-        overflowY: 'visible'
-    });
-
     // Extension
     const setGroup = document.createElement('div');
     setGroup.className = 'filter-group';
@@ -82,16 +69,12 @@ export function createFiltersBar({ onFilterChange }) {
     if (store.cardDB.ready) populateSets();
     else store.on('data-loaded', populateSets);
 
-    // Création des boutons de couleur (corrigés)
+    // Création des boutons de couleur
     const colorContainer = container.querySelector('#colorButtonsContainer');
     colorOrder.forEach(color => {
         const btn = document.createElement('div');
         btn.className = 'color-btn';
         btn.style.backgroundImage = `url(${colorSVGDataURIs[color]})`;
-        btn.style.backgroundSize = 'contain';
-        btn.style.backgroundRepeat = 'no-repeat';
-        btn.style.backgroundPosition = 'center';
-        btn.style.backgroundColor = 'transparent';
         btn.title = translations[store.language].colorNames[color] || color;
         btn.dataset.color = color;
         btn.addEventListener('click', () => {
@@ -101,7 +84,7 @@ export function createFiltersBar({ onFilterChange }) {
         colorContainer.appendChild(btn);
     });
 
-    // Boutons de coût (inchangés)
+    // Boutons de coût
     const costContainer = container.querySelector('#costButtonsContainer');
     for (let i = 1; i <= 8; i++) {
         const btn = document.createElement('div');
@@ -109,7 +92,6 @@ export function createFiltersBar({ onFilterChange }) {
         btn.style.backgroundImage = `url('${costHexSVG}')`;
         btn.style.backgroundSize = 'cover';
         btn.textContent = i;
-        btn.style.lineHeight = '36px';
         btn.dataset.cost = i;
         btn.addEventListener('click', () => {
             btn.classList.toggle('active');
@@ -122,7 +104,6 @@ export function createFiltersBar({ onFilterChange }) {
     btn9.style.backgroundImage = `url('${costHexSVG}')`;
     btn9.style.backgroundSize = 'cover';
     btn9.textContent = '9+';
-    btn9.style.lineHeight = '36px';
     btn9.dataset.cost = '9+';
     btn9.addEventListener('click', () => {
         btn9.classList.toggle('active');
@@ -130,7 +111,7 @@ export function createFiltersBar({ onFilterChange }) {
     });
     costContainer.appendChild(btn9);
 
-    // Bouton encre (inchangé)
+    // Bouton encre
     const inkContainer = container.querySelector('#inkableButton');
     const inkBtn = document.createElement('div');
     inkBtn.className = 'inkable-btn';
