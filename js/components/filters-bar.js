@@ -5,15 +5,18 @@ import { translations, colorOrder, colorSVGDataURIs, costHexSVG, inkwellSVG } fr
 export function createFiltersBar({ onFilterChange }) {
     const container = document.createElement('div');
     container.className = 'header-filters';
-    // Forcer l'affichage en ligne même si le CSS n'est pas appliqué
+
+    // Styles imposés pour éviter le passage à la ligne verticale
     Object.assign(container.style, {
         display: 'flex',
         flexDirection: 'row',
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',          // <-- empêche le retour à la ligne
         gap: '12px',
         alignItems: 'flex-end',
         paddingTop: '8px',
-        borderTop: '1px solid rgba(255,255,255,0.05)'
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        overflowX: 'auto',          // <-- barre de défilement si les éléments débordent
+        overflowY: 'visible'
     });
 
     // Extension
