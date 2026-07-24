@@ -2,7 +2,6 @@
 import { store } from '../store.js';
 import { createCardPool } from '../components/card-pool.js';
 import { createDeckPanel } from '../components/deck-panel.js';
-import { createSearchBar } from '../components/search-bar.js';
 import { createLanguageSelector } from '../components/language-selector.js';
 
 export function createDeckBuilderView() {
@@ -26,7 +25,6 @@ export function createDeckBuilderView() {
     `;
     container.appendChild(header);
 
-    // Rangée langue + recherche (optionnel dans deck builder, on garde)
     const topRow = document.createElement('div');
     topRow.style.display = 'flex';
     topRow.style.gap = '12px';
@@ -46,7 +44,6 @@ export function createDeckBuilderView() {
     mainContainer.appendChild(deckPanel);
     container.appendChild(mainContainer);
 
-    // Connexion recherche -> filtrage des cartes
     const searchInput = cardPool.element.querySelector('input');
     let allCards = [];
     const updatePool = (query = '') => {
@@ -56,16 +53,25 @@ export function createDeckBuilderView() {
     };
     searchInput.addEventListener('input', (e) => updatePool(e.target.value));
 
-    // Initialisation
+    const onDataLoaded = () => {
+        allCards = store.cardDB.cards;
+        cardPool.renderPool(allCards);
+    };
     if (store.cardDB.ready) {
         allCards = store.cardDB.cards;
         cardPool.renderPool(allCards);
     } else {
-        store.on('data-loaded', () => {
-            allCards = store.cardDB.cards;
-            cardPool.renderPool(allCards);
-        });
+        store.on('data-loaded', onDataLoaded);
     }
 
-    return container;
+    // Nettoyage
+    const destroy = () => {
+        store.off('data-loaded', onDataLoaded);
+        // Ici on pourrait aussi retirer les listeners du deckPanel si nécessaire,
+        // mais le deckPanel est recréé à chaque fois donc pas de persistance.
+    };
+
+    const view = container;
+    view.destroy = destroy;
+    return view;
 }
