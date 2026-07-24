@@ -1,4 +1,3 @@
-// js/core/deck.js
 class Deck {
     constructor() {
         this.cards = []; // { fullName: string, quantity: number }
