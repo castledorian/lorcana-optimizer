@@ -11,6 +11,7 @@ import { translations, colorHexMap } from '../i18n.js';
 export function createCardBrowserView() {
     const container = document.createElement('div');
 
+    // Header
     const header = document.createElement('header');
     header.className = 'header';
     header.innerHTML = `
@@ -60,7 +61,7 @@ export function createCardBrowserView() {
     // Grille de cartes
     let currentPage = 1;
     const CARDS_PER_PAGE = 48;
-    let uniqueCardList = []; // { representative, variants }
+    let uniqueCardList = [];
     const gridEl = document.createElement('div');
     gridEl.id = 'cardsGrid';
     container.appendChild(gridEl);
@@ -73,7 +74,6 @@ export function createCardBrowserView() {
     const modal = createModal();
     container.appendChild(modal.element);
 
-    // Gestion des événements de la grille
     const onCardClick = (group) => modal.open(group.variants, 0);
     const onHover = (frame) => {
         const color = frame.dataset.color;
@@ -105,7 +105,6 @@ export function createCardBrowserView() {
         let filtered = cards.slice();
         if (selectedSet !== 'all') filtered = filtered.filter(c => c.setCode === selectedSet);
 
-        // Couleurs
         const selectedColors = new Set();
         document.querySelectorAll('.color-btn.active').forEach(btn => selectedColors.add(btn.dataset.color));
         if (selectedColors.size > 0) {
@@ -120,7 +119,6 @@ export function createCardBrowserView() {
             });
         }
 
-        // Coûts
         const selectedCosts = new Set();
         document.querySelectorAll('.cost-btn.active').forEach(btn => selectedCosts.add(btn.dataset.cost));
         if (selectedCosts.size > 0) {
@@ -133,17 +131,14 @@ export function createCardBrowserView() {
             });
         }
 
-        // Encre
         const onlyInkable = document.querySelector('.inkable-btn.active') !== null;
         if (onlyInkable) filtered = filtered.filter(c => c.inkwell === true);
 
-        // Recherche
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             filtered = filtered.filter(c => c.searchText && c.searchText.includes(q));
         }
 
-        // Tri
         filtered.sort((a, b) => {
             let valA = sortField === 'name' ? (a.name || '').toLowerCase() : (a.cost || 0);
             let valB = sortField === 'name' ? (b.name || '').toLowerCase() : (b.cost || 0);
@@ -152,7 +147,6 @@ export function createCardBrowserView() {
             return 0;
         });
 
-        // Regrouper par fullName
         const groups = new Map();
         filtered.forEach(card => {
             const key = card.fullName || `${card.name} - ${card.version}`;
@@ -190,25 +184,29 @@ export function createCardBrowserView() {
         }));
     }
 
-    // Initialisation quand les données sont chargées
+    // Gestion des événements data-loaded
+    const onDataLoaded = () => { applyFiltersAndRender(); };
     if (store.cardDB.ready) {
         applyFiltersAndRender();
     } else {
-        store.on('data-loaded', applyFiltersAndRender);
+        store.on('data-loaded', onDataLoaded);
     }
 
-    // Réactivité changement de langue
-    store.on('language-changed', () => {
-        // recharge déclenchée par le language-selector, donc data-loaded arrivera
-    });
+    // Fonction de nettoyage
+    const destroy = () => {
+        store.off('data-loaded', onDataLoaded);
+        // Ne pas oublier les autres listeners s'il y en avait (ici aucun autre persistant)
+    };
 
     container.init = () => {
-        // Mise à jour des stats si déjà chargé
         if (store.cardDB.ready) {
             document.getElementById('totalCards').textContent = store.cardDB.cards.length;
             document.getElementById('totalSets').textContent = Object.keys(store.cardDB.sets).length;
         }
     };
 
-    return container;
+    // Retourne l'élément DOM + la méthode destroy
+    const view = container;
+    view.destroy = destroy;
+    return view;
 }
