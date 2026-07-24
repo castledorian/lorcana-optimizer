@@ -69,8 +69,15 @@ export function createFiltersBar({ onFilterChange }) {
     if (store.cardDB.ready) populateSets();
     else store.on('data-loaded', populateSets);
 
-    // Création des boutons de couleur
+    // Conteneur des couleurs – alignement horizontal forcé
     const colorContainer = container.querySelector('#colorButtonsContainer');
+    colorContainer.style.display = 'flex';
+    colorContainer.style.flexDirection = 'row';
+    colorContainer.style.flexWrap = 'nowrap';
+    colorContainer.style.gap = '6px';
+    colorContainer.style.alignItems = 'center';
+    colorContainer.style.overflowX = 'auto';
+
     colorOrder.forEach(color => {
         const btn = document.createElement('div');
         btn.className = 'color-btn';
@@ -84,8 +91,15 @@ export function createFiltersBar({ onFilterChange }) {
         colorContainer.appendChild(btn);
     });
 
-    // Boutons de coût
+    // Conteneur des coûts – alignement horizontal forcé
     const costContainer = container.querySelector('#costButtonsContainer');
+    costContainer.style.display = 'flex';
+    costContainer.style.flexDirection = 'row';
+    costContainer.style.flexWrap = 'nowrap';
+    costContainer.style.gap = '6px';
+    costContainer.style.alignItems = 'center';
+    costContainer.style.overflowX = 'auto';
+
     for (let i = 1; i <= 8; i++) {
         const btn = document.createElement('div');
         btn.className = 'cost-btn';
@@ -111,8 +125,12 @@ export function createFiltersBar({ onFilterChange }) {
     });
     costContainer.appendChild(btn9);
 
-    // Bouton encre
+    // Conteneur encre – alignement horizontal
     const inkContainer = container.querySelector('#inkableButton');
+    inkContainer.style.display = 'flex';
+    inkContainer.style.flexDirection = 'row';
+    inkContainer.style.flexWrap = 'nowrap';
+
     const inkBtn = document.createElement('div');
     inkBtn.className = 'inkable-btn';
     inkBtn.style.backgroundImage = `url('${inkwellSVG}')`;
