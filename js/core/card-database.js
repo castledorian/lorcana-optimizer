@@ -16,13 +16,14 @@ class CardDatabase {
             this.cards = data.cards;
             this.sets = data.sets;
 
-            // Ajout de searchText pour la recherche étendue
+            // Création de searchText pour une recherche étendue
             this.cards.forEach(card => {
                 const subtypes = card.subtypesText || (card.subtypes ? card.subtypes.join(' ') : '');
                 const artists = card.artistsText || (card.artists ? card.artists.join(' ') : '');
                 const story = card.story || '';
                 const flavor = card.flavorText || '';
-                card.searchText = `${card.name} ${card.version} ${card.fullName} ${card.simpleName} ${subtypes} ${artists} ${story} ${flavor}`.toLowerCase();
+                const text = card.text || '';              // ← capacités et mots‑clés
+                card.searchText = `${card.name} ${card.version} ${card.fullName} ${card.simpleName} ${subtypes} ${artists} ${story} ${flavor} ${text}`.toLowerCase();
             });
 
             this.ready = true;
