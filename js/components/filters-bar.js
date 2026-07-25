@@ -1,4 +1,3 @@
-// js/components/filters-bar.js
 import { store } from '../store.js';
 import { translations, colorOrder, colorSVGDataURIs, costHexSVG, inkwellSVG } from '../i18n.js';
 
@@ -9,7 +8,10 @@ export function createFiltersBar({ onFilterChange }) {
     // Extension
     const setGroup = document.createElement('div');
     setGroup.className = 'filter-group';
-    setGroup.innerHTML = `<label>${translations[store.language].allSets}</label><select id="set"><option value="all">${translations[store.language].allSets}</option></select>`;
+    setGroup.innerHTML = `<label>${translations[store.language].filterSetLabel}</label>
+        <select id="set">
+            <option value="all">${translations[store.language].allSets}</option>
+        </select>`;
     container.appendChild(setGroup);
 
     // Couleurs
@@ -50,7 +52,6 @@ export function createFiltersBar({ onFilterChange }) {
         container.querySelector('#set').value = 'all';
         container.querySelector('#sort').value = 'name-asc';
         document.querySelectorAll('.color-btn, .cost-btn, .inkable-btn').forEach(b => b.classList.remove('active'));
-        // Réinitialiser les filtres des couleurs
         updateColorFilters();
         if (onFilterChange) onFilterChange();
     });
@@ -71,7 +72,7 @@ export function createFiltersBar({ onFilterChange }) {
     if (store.cardDB.ready) populateSets();
     else store.on('data-loaded', populateSets);
 
-    // --- Conteneur des couleurs ---
+    // Conteneur des couleurs
     const colorContainer = container.querySelector('#colorButtonsContainer');
     colorContainer.style.display = 'flex';
     colorContainer.style.flexDirection = 'row';
@@ -79,8 +80,7 @@ export function createFiltersBar({ onFilterChange }) {
     colorContainer.style.gap = '6px';
     colorContainer.style.alignItems = 'center';
 
-    const colorButtons = []; // stockage pour mise à jour facile
-
+    const colorButtons = [];
     colorOrder.forEach(color => {
         const btn = document.createElement('div');
         btn.className = 'color-btn';
@@ -104,30 +104,20 @@ export function createFiltersBar({ onFilterChange }) {
         colorButtons.push(btn);
     });
 
-    // Fonction de mise à jour des filtres visuels des couleurs
     function updateColorFilters() {
         const anyActive = colorButtons.some(b => b.classList.contains('active'));
         colorButtons.forEach(btn => {
             const isActive = btn.classList.contains('active');
             if (isActive) {
-                // Surbrillance pour l'actif
                 btn.style.filter = 'brightness(1.4) drop-shadow(0 0 4px var(--accent-gold-glow))';
             } else {
-                if (anyActive) {
-                    // Si d'autres sont actifs, on grise celle-ci
-                    btn.style.filter = 'grayscale(100%) brightness(0.7)';
-                } else {
-                    // Aucune active : apparence normale
-                    btn.style.filter = 'brightness(0.8)';
-                }
+                btn.style.filter = anyActive ? 'grayscale(100%) brightness(0.7)' : 'brightness(0.8)';
             }
         });
     }
-
-    // Appliquer l'état initial (aucune active)
     updateColorFilters();
 
-    // --- Conteneur des coûts ---
+    // Conteneur des coûts
     const costContainer = container.querySelector('#costButtonsContainer');
     costContainer.style.display = 'flex';
     costContainer.style.flexDirection = 'row';
@@ -160,7 +150,7 @@ export function createFiltersBar({ onFilterChange }) {
     });
     costContainer.appendChild(btn9);
 
-    // --- Conteneur encre ---
+    // Conteneur encre
     const inkContainer = container.querySelector('#inkableButton');
     inkContainer.style.display = 'flex';
     inkContainer.style.flexDirection = 'row';
@@ -182,8 +172,8 @@ export function createFiltersBar({ onFilterChange }) {
 
     // Mise à jour de la langue
     store.on('language-changed', () => {
-        setGroup.querySelector('label').textContent = translations[store.language].allSets;
-        sortGroup.querySelector('label').textContent = translations[store.language].allSets;
+        setGroup.querySelector('label').textContent = translations[store.language].filterSetLabel;
+        sortGroup.querySelector('label').textContent = 'Tri'; // ou une clé de traduction si on veut
         const sortSelect = container.querySelector('#sort');
         sortSelect.options[0].textContent = translations[store.language].sortNameAsc;
         sortSelect.options[1].textContent = translations[store.language].sortNameDesc;
