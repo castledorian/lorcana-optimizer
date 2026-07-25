@@ -7,16 +7,20 @@ import Deck from './deck.js';
  *   4 Rabbit - Hunny Paladin
  *   4 Rabbit - Hunny Paladin (13-5)
  * @param {string} text
- * @returns {Deck|null} une instance de Deck ou null en cas d'erreur
+ * @returns {{ deck: Deck, unknown: string[] }}
  */
 export function importDeckFromText(text) {
     const lines = text.split('\n').filter(line => line.trim() !== '');
     const newDeck = new Deck();
     const cardDB = store.cardDB;
+    
+    if (!cardDB || !cardDB.ready) {
+        return { deck: newDeck, unknown: ['Base de données non chargée.'] };
+    }
+
     const unknown = [];
 
     for (const line of lines) {
-        // Extraction de la quantité et du nom
         const match = line.match(/^(\d+)\s+(.+)/);
         if (!match) continue;
         const quantity = parseInt(match[1], 10);
@@ -49,6 +53,8 @@ export function importDeckFromText(text) {
 export function exportDeckToText(deck) {
     if (!deck || deck.getTotalCards() === 0) return '';
     const cardDB = store.cardDB;
+    if (!cardDB || !cardDB.ready) return '';
+    
     const lines = deck.cards.map(({ fullName, quantity }) => {
         const card = cardDB.getCardById(fullName);
         const displayName = card ? card.fullName : fullName;
