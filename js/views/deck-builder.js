@@ -1,4 +1,3 @@
-// js/views/deck-builder.js
 import { store } from '../store.js';
 import { createCardPool } from '../components/card-pool.js';
 import { createDeckPanel } from '../components/deck-panel.js';
@@ -18,6 +17,7 @@ export function createDeckBuilderView() {
                 <div class="nav-links">
                     <a href="#cards" class="nav-link">Cartes</a>
                     <a href="#deck" class="nav-link active">Deck Builder</a>
+                    <a href="#analyze" class="nav-link">Analyse</a>
                 </div>
             </div>
         </div>
