@@ -165,8 +165,8 @@ body {
     gap: 6px;
     align-items: center;
     flex-wrap: nowrap;
-    overflow-x: clip;            /* ← empêche la barre de défilement inutile */
-    padding: 2px;                /* ← espace pour l'agrandissement au survol */
+    overflow-x: clip;
+    padding: 2px;
 }
 
 /* Boutons de couleur – ressemblent aux boutons de coût */
@@ -182,6 +182,7 @@ body {
     position: relative;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    filter: brightness(0.8);
 }
 .color-btn.active {
     filter: brightness(1.4) drop-shadow(0 0 4px var(--accent-gold-glow));
@@ -215,8 +216,8 @@ body {
     justify-content: center;
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 13px;           /* légèrement réduit pour ne pas toucher les bords */
-    line-height: 1;            /* centrage vertical parfait */
+    font-size: 13px;
+    line-height: 1;
     color: var(--accent-gold);
     transition: all 0.2s ease;
     filter: brightness(0.8);
@@ -582,3 +583,19 @@ body {
 }
 .deck-stats div { margin-bottom: 4px; }
 .deck-stats span { color: var(--accent-gold); font-weight: 600; }
+
+/* Deck Analyzer */
+#analyzer-content h3 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 6px;
+}
+#analyzer-content ul {
+    list-style: none;
+    padding: 0;
+}
+#analyzer-content ul li::before {
+    content: '• ';
+    color: var(--accent-gold);
+}
