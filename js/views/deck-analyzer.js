@@ -1,6 +1,7 @@
 import { store } from '../store.js';
 import { analyzeDeck } from '../analyzers/deck-analyzer.js';
 import { evaluateCardPerformance } from '../analyzers/card-performance-evaluator.js';
+import { optimizeCopies } from '../optimizer/copy-optimizer.js';
 
 export function createDeckAnalyzerView() {
     const container = document.createElement('div');
@@ -23,18 +24,24 @@ export function createDeckAnalyzerView() {
     simSection.style.marginTop = '40px';
     container.appendChild(simSection);
 
+    const optSection = document.createElement('div');
+    optSection.id = 'optimization-section';
+    optSection.style.marginTop = '40px';
+    container.appendChild(optSection);
+
     function update() {
         const deck = store.currentDeck;
         if (!deck) {
             content.innerHTML = '<p style="color:var(--text-muted);">Deck non initialisé.</p>';
             simSection.innerHTML = '';
+            optSection.innerHTML = '';
             return;
         }
 
         const analysis = analyzeDeck(deck, store.cardDB);
         content.innerHTML = renderAnalysis(analysis);
 
-        // Réinitialiser la section simulation
+        // Simulation Monte Carlo
         simSection.innerHTML = `
             <h3 style="color:var(--accent-gold); margin-bottom:12px;">Performance par carte (simulation Monte Carlo)</h3>
             <button id="run-simulation-btn" class="clear-filters-btn" style="font-size:14px; padding:8px 16px;">
@@ -43,17 +50,37 @@ export function createDeckAnalyzerView() {
             <div id="sim-results" style="margin-top:16px;"></div>
         `;
 
-        // Attacher les événements APRÈS que le HTML soit en place
+        // Optimisation des copies
+        optSection.innerHTML = `
+            <h3 style="color:var(--accent-gold); margin-bottom:12px;">Optimisation des quantités (Copy Optimizer)</h3>
+            <button id="run-optimizer-btn" class="clear-filters-btn" style="font-size:14px; padding:8px 16px;">
+                ⚡ Lancer l'optimisation (500 simulations par carte)
+            </button>
+            <div id="opt-results" style="margin-top:16px;"></div>
+        `;
+
         requestAnimationFrame(() => {
-            const runBtn = simSection.querySelector('#run-simulation-btn');
-            const resultsDiv = simSection.querySelector('#sim-results');
-            if (runBtn) {
-                runBtn.addEventListener('click', () => {
+            const runSimBtn = simSection.querySelector('#run-simulation-btn');
+            const simResultsDiv = simSection.querySelector('#sim-results');
+            if (runSimBtn) {
+                runSimBtn.addEventListener('click', () => {
                     if (!store.cardDB || !store.cardDB.ready) {
-                        resultsDiv.innerHTML = '<p style="color:var(--text-muted);">Base de données non chargée.</p>';
+                        simResultsDiv.innerHTML = '<p style="color:var(--text-muted);">Base de données non chargée.</p>';
                         return;
                     }
-                    runSimulation(deck, runBtn, resultsDiv);
+                    runSimulation(deck, runSimBtn, simResultsDiv);
+                });
+            }
+
+            const optBtn = optSection.querySelector('#run-optimizer-btn');
+            const optResultsDiv = optSection.querySelector('#opt-results');
+            if (optBtn) {
+                optBtn.addEventListener('click', () => {
+                    if (!store.cardDB || !store.cardDB.ready) {
+                        optResultsDiv.innerHTML = '<p style="color:var(--text-muted);">Base de données non chargée.</p>';
+                        return;
+                    }
+                    runOptimizer(deck, optBtn, optResultsDiv);
                 });
             }
         });
@@ -77,6 +104,24 @@ export function createDeckAnalyzerView() {
         }, 50);
     }
 
+    function runOptimizer(deck, btn, resultsDiv) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Optimisation en cours... (peut être long)';
+        resultsDiv.innerHTML = '';
+
+        setTimeout(() => {
+            try {
+                const results = optimizeCopies(deck, store.cardDB, 500);
+                resultsDiv.innerHTML = renderOptimizationResults(results);
+            } catch (e) {
+                resultsDiv.innerHTML = '<p style="color:var(--text-muted);">Erreur lors de l\'optimisation.</p>';
+                console.error(e);
+            }
+            btn.disabled = false;
+            btn.textContent = '⚡ Relancer l\'optimisation';
+        }, 50);
+    }
+
     store.on('deck-changed', update);
     if (store.cardDB && store.cardDB.ready) {
         update();
@@ -93,6 +138,8 @@ export function createDeckAnalyzerView() {
     view.destroy = destroy;
     return view;
 }
+
+// ---------- Rendu ----------
 
 function renderPerformanceTable(perfMap, deck) {
     if (!perfMap || perfMap.size === 0) return '<p style="color:var(--text-muted);">Aucune donnée de simulation disponible.</p>';
@@ -142,6 +189,46 @@ function renderPerformanceTable(perfMap, deck) {
             <strong>Copies jouées</strong> : nombre moyen d'exemplaires mis en jeu par partie.
         </p>
     `;
+}
+
+function renderOptimizationResults(optResults) {
+    if (!optResults || optResults.length === 0) return '<p style="color:var(--text-muted);">Aucun résultat.</p>';
+
+    let html = `<table style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr style="border-bottom:1px solid var(--border-color); text-align:left;">
+                <th style="padding:8px;">Carte</th>
+                <th style="padding:8px;">Qté actuelle</th>
+                <th style="padding:8px;">Qté optimale</th>
+                <th style="padding:8px;">Lore moyen</th>
+                <th style="padding:8px;">Stabilité encre</th>
+                <th style="padding:8px;">Score</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    for (const item of optResults) {
+        const card = store.cardDB.getCardById(item.fullName);
+        const displayName = card ? card.fullName : item.fullName;
+        const currentQty = store.currentDeck.cards.find(c => c.fullName === item.fullName)?.quantity || 0;
+        const best = item.results.find(r => r.quantity === item.bestQuantity);
+        const score = (best.avgLore * best.inkStability).toFixed(2);
+
+        html += `<tr>
+            <td>${displayName}</td>
+            <td>${currentQty}</td>
+            <td style="font-weight:bold; color:var(--accent-gold);">${item.bestQuantity}</td>
+            <td>${best.avgLore.toFixed(1)}</td>
+            <td>${(best.inkStability*100).toFixed(1)}%</td>
+            <td>${score}</td>
+        </tr>`;
+    }
+
+    html += `</tbody></table>`;
+    html += `<p style="color:var(--text-muted); font-size:12px; margin-top:8px;">
+        Le score est le produit Lore moyen × Stabilité d'encre. La quantité optimale maximise ce score.
+    </p>`;
+    return html;
 }
 
 function renderAnalysis(a) {
