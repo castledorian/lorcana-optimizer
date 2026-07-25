@@ -182,7 +182,6 @@ body {
     position: relative;
     transition: all 0.2s ease;
     flex-shrink: 0;
-    filter: brightness(0.8);
 }
 .color-btn.active {
     filter: brightness(1.4) drop-shadow(0 0 4px var(--accent-gold-glow));
@@ -216,7 +215,8 @@ body {
     justify-content: center;
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;           /* légèrement réduit pour ne pas toucher les bords */
+    line-height: 1;            /* centrage vertical parfait */
     color: var(--accent-gold);
     transition: all 0.2s ease;
     filter: brightness(0.8);
