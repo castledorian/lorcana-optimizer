@@ -75,7 +75,7 @@ export function createDeckBuilderView() {
     `;
     container.appendChild(importArea);
 
-    // Récupération des références internes à importArea (avant de les utiliser)
+    // Récupération des références internes à importArea
     const importTextarea = importArea.querySelector('#import-textarea');
     const importMessage = importArea.querySelector('#import-message');
     const importCancelBtn = importArea.querySelector('#import-cancel-btn');
@@ -95,10 +95,16 @@ export function createDeckBuilderView() {
     importLoadBtn.addEventListener('click', () => {
         const text = importTextarea.value;
         const result = importDeckFromText(text);
+        if (!store.cardDB || !store.cardDB.ready) {
+            importMessage.textContent = 'Base de données non chargée. Veuillez réessayer.';
+            return;
+        }
         if (result.unknown.length > 0) {
             importMessage.textContent = `Cartes non reconnues : ${result.unknown.join(', ')}`;
-        } else {
-            store.setDeck(result.deck);
+        }
+        // Même avec des inconnues, on charge le reste
+        store.setDeck(result.deck);
+        if (result.unknown.length === 0) {
             importArea.style.display = 'none';
         }
     });
@@ -124,7 +130,7 @@ export function createDeckBuilderView() {
     const searchInput = cardPool.element.querySelector('input');
     let allCards = [];
     const updatePool = (query = '') => {
-        if (!store.cardDB.ready) return;
+        if (!store.cardDB || !store.cardDB.ready) return;
         const filtered = query ? store.cardDB.searchCards(query) : allCards;
         cardPool.renderPool(filtered);
     };
@@ -136,7 +142,7 @@ export function createDeckBuilderView() {
         allCards = store.cardDB.cards;
         cardPool.renderPool(allCards);
     };
-    if (store.cardDB.ready) {
+    if (store.cardDB && store.cardDB.ready) {
         allCards = store.cardDB.cards;
         cardPool.renderPool(allCards);
     } else {
