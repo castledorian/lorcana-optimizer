@@ -11,17 +11,13 @@ import { translations, colorHexMap } from '../i18n.js';
 export function createCardBrowserView() {
     const container = document.createElement('div');
 
-    // Header avec nouveau logo
+    // Header (titre seul, sans logo)
     const header = document.createElement('header');
     header.className = 'header';
     header.innerHTML = `
         <div class="header-container">
             <div class="header-top">
                 <div class="brand">
-                    <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
-                        <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" stroke="var(--accent-gold)" stroke-width="1.5" fill="rgba(245,196,81,0.1)"/>
-                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="var(--accent-gold)" opacity="0.9"/>
-                    </svg>
                     <div class="title">Lorcana Card Viewer</div>
                 </div>
                 <div class="nav-links">
@@ -101,7 +97,6 @@ export function createCardBrowserView() {
         return 'var(--accent-gold)';
     }
 
-    // --- Nouvelle logique de filtre par couleur ---
     function getNormalizedColors(card) {
         return card.color.split('-').map(c => {
             const trimmed = c.trim();
@@ -126,31 +121,27 @@ export function createCardBrowserView() {
         let filtered = cards.slice();
         if (selectedSet !== 'all') filtered = filtered.filter(c => c.setCode === selectedSet);
 
-        // Récupération des couleurs sélectionnées
+        // Couleurs
         const selectedColors = new Set();
         document.querySelectorAll('.color-btn.active').forEach(btn => selectedColors.add(btn.dataset.color));
-
         if (selectedColors.size > 0) {
             filtered = filtered.filter(card => {
                 const cardColors = getNormalizedColors(card);
                 if (selectedColors.size === 1) {
-                    // Une seule couleur : on veut les cartes monocolores exactement de cette couleur
                     return cardColors.length === 1 && cardColors[0] === [...selectedColors][0];
                 } else if (selectedColors.size === 2) {
-                    // Deux couleurs : cartes bicolores exactement ces deux couleurs
                     const sortedSelection = [...selectedColors].sort();
                     return cardColors.length === 2 &&
                            cardColors[0] === sortedSelection[0] &&
                            cardColors[1] === sortedSelection[1];
                 } else {
-                    // Trois couleurs ou plus : cartes bicolores dont les deux couleurs sont dans la sélection
                     return cardColors.length === 2 &&
                            cardColors.every(c => selectedColors.has(c));
                 }
             });
         }
 
-        // Filtre par coût (inchangé)
+        // Coûts
         const selectedCosts = new Set();
         document.querySelectorAll('.cost-btn.active').forEach(btn => selectedCosts.add(btn.dataset.cost));
         if (selectedCosts.size > 0) {
@@ -166,13 +157,12 @@ export function createCardBrowserView() {
         const onlyInkable = document.querySelector('.inkable-btn.active') !== null;
         if (onlyInkable) filtered = filtered.filter(c => c.inkwell === true);
 
-        // Recherche textuelle (inclut désormais les capacités)
+        // Recherche textuelle (utilise searchText enrichi)
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             filtered = filtered.filter(c => c.searchText && c.searchText.includes(q));
         }
 
-        // Tri
         filtered.sort((a, b) => {
             let valA = sortField === 'name' ? (a.name || '').toLowerCase() : (a.cost || 0);
             let valB = sortField === 'name' ? (b.name || '').toLowerCase() : (b.cost || 0);
@@ -181,7 +171,6 @@ export function createCardBrowserView() {
             return 0;
         });
 
-        // Regrouper par fullName pour éviter les doublons de variantes
         const groups = new Map();
         filtered.forEach(card => {
             const key = card.fullName || `${card.name} - ${card.version}`;
@@ -228,9 +217,7 @@ export function createCardBrowserView() {
 
     const destroy = () => {
         store.off('data-loaded', onDataLoaded);
-        if (modal && typeof modal.destroy === 'function') {
-            modal.destroy();
-        }
+        if (modal && typeof modal.destroy === 'function') modal.destroy();
     };
 
     container.init = () => {
