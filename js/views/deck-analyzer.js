@@ -30,6 +30,7 @@ export function createDeckAnalyzerView() {
         if (!deck) return;
         const analysis = analyzeDeck(deck, store.cardDB);
         content.innerHTML = renderAnalysis(analysis);
+
         // Réinitialiser la section de simulation
         simSection.innerHTML = `
             <h3 style="color:var(--accent-gold); margin-bottom:12px;">Performance par carte (simulation Monte Carlo)</h3>
@@ -38,13 +39,16 @@ export function createDeckAnalyzerView() {
             </button>
             <div id="sim-results" style="margin-top:16px;"></div>
         `;
-        document.getElementById('run-simulation-btn').addEventListener('click', () => runSimulation(deck));
+
+        // Utiliser querySelector sur simSection pour éviter les erreurs DOM
+        const runBtn = simSection.querySelector('#run-simulation-btn');
+        const resultsDiv = simSection.querySelector('#sim-results');
+        if (runBtn) {
+            runBtn.addEventListener('click', () => runSimulation(deck, runBtn, resultsDiv));
+        }
     };
 
-    const runSimulation = async (deck) => {
-        const btn = document.getElementById('run-simulation-btn');
-        const resultsDiv = document.getElementById('sim-results');
-        if (!btn || !resultsDiv) return;
+    const runSimulation = (deck, btn, resultsDiv) => {
         btn.disabled = true;
         btn.textContent = '⏳ Simulation en cours... (peut prendre quelques secondes)';
         resultsDiv.innerHTML = '';
