@@ -1,10 +1,10 @@
-// js/main.js
 import { store } from './store.js';
 import { registerRoute } from './router.js';
 import cardDB from './core/card-database.js';
 import Deck from './core/deck.js';
 import { createCardBrowserView } from './views/card-browser.js';
 import { createDeckBuilderView } from './views/deck-builder.js';
+import { createDeckAnalyzerView } from './views/deck-analyzer.js';
 
 // Initialisation du store
 store.cardDB = cardDB;
@@ -18,3 +18,4 @@ cardDB.load(store.language).then(() => {
 // Enregistrement des routes
 registerRoute('cards', createCardBrowserView);
 registerRoute('deck', createDeckBuilderView);
+registerRoute('analyze', createDeckAnalyzerView);
