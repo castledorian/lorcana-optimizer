@@ -148,20 +148,21 @@ function renderPerformanceTable(perfMap, deck) {
     for (const [fullName, perf] of perfMap) {
         const card = store.cardDB.getCardById(fullName);
         const displayName = card ? card.fullName : fullName;
-        const playRate = (perf.playRate * 100).toFixed(1);
-        const inkRate = (perf.inkRate * 100).toFixed(1);
-        const deadRate = (perf.deadRate * 100).toFixed(1);
-        const avgCopies = perf.avgCopiesPlayed.toFixed(2);
+        const isPlayable = card && card.type === 'Character';
+        const playRate = isPlayable ? (perf.playRate * 100).toFixed(1) + '%' : 'Non jouable';
+        const inkRate = (perf.inkRate * 100).toFixed(1) + '%';
+        const deadRate = (perf.deadRate * 100).toFixed(1) + '%';
+        const avgCopies = isPlayable ? perf.avgCopiesPlayed.toFixed(2) : '–';
 
-        const playBar = `<div style="background:var(--surface-card); height:6px; border-radius:3px; width:100px; display:inline-block; margin-left:8px;"><div style="width:${playRate}%; height:100%; background:#4caf50; border-radius:3px;"></div></div>`;
-        const deadBar = `<div style="background:var(--surface-card); height:6px; border-radius:3px; width:100px; display:inline-block; margin-left:8px;"><div style="width:${deadRate}%; height:100%; background:#f44336; border-radius:3px;"></div></div>`;
+        const playBar = isPlayable ? `<div style="background:var(--surface-card); height:6px; border-radius:3px; width:100px; display:inline-block; margin-left:8px;"><div style="width:${(perf.playRate*100).toFixed(1)}%; height:100%; background:#4caf50; border-radius:3px;"></div></div>` : '';
+        const deadBar = `<div style="background:var(--surface-card); height:6px; border-radius:3px; width:100px; display:inline-block; margin-left:8px;"><div style="width:${(perf.deadRate*100).toFixed(1)}%; height:100%; background:#f44336; border-radius:3px;"></div></div>`;
 
         rows.push(`
             <tr>
                 <td style="font-weight:500;">${displayName}</td>
-                <td>${playRate}% ${playBar}</td>
-                <td>${inkRate}%</td>
-                <td>${deadRate}% ${deadBar}</td>
+                <td>${playRate} ${playBar}</td>
+                <td>${inkRate}</td>
+                <td>${deadRate} ${deadBar}</td>
                 <td>${avgCopies}</td>
             </tr>
         `);
@@ -183,7 +184,7 @@ function renderPerformanceTable(perfMap, deck) {
             </tbody>
         </table>
         <p style="color:var(--text-muted); font-size:12px; margin-top:8px;">
-            <strong>Taux de jeu</strong> : probabilité que la carte soit jouée au moins une fois en 10 tours.<br>
+            <strong>Taux de jeu</strong> : probabilité que la carte soit jouée au moins une fois (personnages uniquement).<br>
             <strong>Taux d'encrage</strong> : probabilité qu'elle soit utilisée comme encre.<br>
             <strong>Taux de carte morte</strong> : probabilité qu'elle reste en main sans être ni jouée ni encrée.<br>
             <strong>Copies jouées</strong> : nombre moyen d'exemplaires mis en jeu par partie.
@@ -212,6 +213,7 @@ function renderOptimizationResults(optResults) {
         const displayName = card ? card.fullName : item.fullName;
         const currentQty = store.currentDeck.cards.find(c => c.fullName === item.fullName)?.quantity || 0;
         const best = item.results.find(r => r.quantity === item.bestQuantity);
+        if (!best) continue;
         const score = (best.avgLore * best.inkStability).toFixed(2);
 
         html += `<tr>
