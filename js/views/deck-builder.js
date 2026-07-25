@@ -13,10 +13,6 @@ export function createDeckBuilderView() {
         <div class="header-container">
             <div class="header-top">
                 <div class="brand">
-                    <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
-                        <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" stroke="var(--accent-gold)" stroke-width="1.5" fill="rgba(245,196,81,0.1)"/>
-                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="var(--accent-gold)" opacity="0.9"/>
-                    </svg>
                     <div class="title">Lorcana Deck Builder</div>
                 </div>
                 <div class="nav-links">
@@ -41,7 +37,7 @@ export function createDeckBuilderView() {
     mainContainer.className = 'deck-builder-container';
 
     const cardPool = createCardPool();
-    const deckPanel = createDeckPanel(); // doit retourner { element, destroy }
+    const deckPanel = createDeckPanel();
 
     mainContainer.appendChild(cardPool.element);
     mainContainer.appendChild(deckPanel.element);
