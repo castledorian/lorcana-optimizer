@@ -1,4 +1,3 @@
-// js/views/card-browser.js
 import { store } from '../store.js';
 import { createSearchBar } from '../components/search-bar.js';
 import { createLanguageSelector } from '../components/language-selector.js';
@@ -23,6 +22,7 @@ export function createCardBrowserView() {
                 <div class="nav-links">
                     <a href="#cards" class="nav-link active">Cartes</a>
                     <a href="#deck" class="nav-link">Deck Builder</a>
+                    <a href="#analyze" class="nav-link">Analyse</a>
                 </div>
             </div>
         </div>
