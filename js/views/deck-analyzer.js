@@ -1,4 +1,3 @@
-// js/views/deck-analyzer.js
 import { store } from '../store.js';
 import { analyzeDeck } from '../analyzers/deck-analyzer.js';
 import { evaluateCardPerformance } from '../analyzers/card-performance-evaluator.js';
@@ -19,19 +18,23 @@ export function createDeckAnalyzerView() {
     content.id = 'analyzer-content';
     container.appendChild(content);
 
-    // Zone pour les résultats de simulation
     const simSection = document.createElement('div');
     simSection.id = 'simulation-section';
     simSection.style.marginTop = '40px';
     container.appendChild(simSection);
 
-    const update = () => {
+    function update() {
         const deck = store.currentDeck;
-        if (!deck) return;
+        if (!deck) {
+            content.innerHTML = '<p style="color:var(--text-muted);">Deck non initialisé.</p>';
+            simSection.innerHTML = '';
+            return;
+        }
+
         const analysis = analyzeDeck(deck, store.cardDB);
         content.innerHTML = renderAnalysis(analysis);
 
-        // Réinitialiser la section de simulation
+        // Réinitialiser la section simulation
         simSection.innerHTML = `
             <h3 style="color:var(--accent-gold); margin-bottom:12px;">Performance par carte (simulation Monte Carlo)</h3>
             <button id="run-simulation-btn" class="clear-filters-btn" style="font-size:14px; padding:8px 16px;">
@@ -40,36 +43,46 @@ export function createDeckAnalyzerView() {
             <div id="sim-results" style="margin-top:16px;"></div>
         `;
 
-        // Utiliser querySelector sur simSection pour éviter les erreurs DOM
-        const runBtn = simSection.querySelector('#run-simulation-btn');
-        const resultsDiv = simSection.querySelector('#sim-results');
-        if (runBtn) {
-            runBtn.addEventListener('click', () => runSimulation(deck, runBtn, resultsDiv));
-        }
-    };
+        // Attacher les événements APRÈS que le HTML soit en place
+        requestAnimationFrame(() => {
+            const runBtn = simSection.querySelector('#run-simulation-btn');
+            const resultsDiv = simSection.querySelector('#sim-results');
+            if (runBtn) {
+                runBtn.addEventListener('click', () => {
+                    if (!store.cardDB || !store.cardDB.ready) {
+                        resultsDiv.innerHTML = '<p style="color:var(--text-muted);">Base de données non chargée.</p>';
+                        return;
+                    }
+                    runSimulation(deck, runBtn, resultsDiv);
+                });
+            }
+        });
+    }
 
-    const runSimulation = (deck, btn, resultsDiv) => {
+    function runSimulation(deck, btn, resultsDiv) {
         btn.disabled = true;
-        btn.textContent = '⏳ Simulation en cours... (peut prendre quelques secondes)';
+        btn.textContent = '⏳ Simulation en cours... (quelques secondes)';
         resultsDiv.innerHTML = '';
 
-        // Lancer la simulation de façon asynchrone
         setTimeout(() => {
             try {
                 const perfMap = evaluateCardPerformance(deck, store.cardDB, 500);
                 resultsDiv.innerHTML = renderPerformanceTable(perfMap, deck);
             } catch (e) {
-                resultsDiv.innerHTML = `<p style="color:var(--text-muted);">Erreur lors de la simulation.</p>`;
+                resultsDiv.innerHTML = '<p style="color:var(--text-muted);">Erreur lors de la simulation.</p>';
                 console.error(e);
             }
             btn.disabled = false;
             btn.textContent = '⚡ Relancer la simulation';
         }, 50);
-    };
+    }
 
     store.on('deck-changed', update);
-    if (store.cardDB.ready) update();
-    else store.on('data-loaded', update);
+    if (store.cardDB && store.cardDB.ready) {
+        update();
+    } else {
+        store.on('data-loaded', update);
+    }
 
     const destroy = () => {
         store.off('deck-changed', update);
@@ -127,10 +140,6 @@ function renderPerformanceTable(perfMap, deck) {
             <strong>Taux d'encrage</strong> : probabilité qu'elle soit utilisée comme encre.<br>
             <strong>Taux de carte morte</strong> : probabilité qu'elle reste en main sans être ni jouée ni encrée.<br>
             <strong>Copies jouées</strong> : nombre moyen d'exemplaires mis en jeu par partie.
-        </p>
-        <p style="color:var(--text-muted); font-size:12px; margin-top:12px;">
-            Ces métriques vous aident à identifier les cartes les moins impactantes (taux de jeu faible, taux mort élevé)
-            ou celles qui servent surtout d'encre (taux d'encrage élevé, peu de jeu).
         </p>
     `;
 }
