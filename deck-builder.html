@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lorcana Optimizer - Deck Builder</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <div class="header-top">
+                <div class="brand">
+                    <svg class="brand-icon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                    <div class="title">Lorcana Deck Builder</div>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">Cartes</a>
+                    <a href="deck-builder.html" class="nav-link active">Deck Builder</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="deck-builder-container">
+        <div class="card-pool">
+            <h2>Cartes disponibles</h2>
+            <div class="search-box" style="margin-bottom:16px;">
+                <input type="text" id="search" placeholder="Rechercher une carte...">
+            </div>
+            <div class="card-pool-grid" id="cardPool"></div>
+        </div>
+        <div class="deck-panel">
+            <h2>Mon Deck</h2>
+            <div id="deckCards"></div>
+            <div class="deck-stats" id="deckStats"></div>
+            <button id="clearDeck" style="width:100%; margin-top:12px; padding:8px; border:1px solid var(--border-color); background:var(--surface-card); color:var(--text-main); border-radius:6px; cursor:pointer;">Vider le deck</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        Données fournies par <a href="https://lorcanajson.org" target="_blank">Lorcanajson.org</a> — Lorcana Optimizer
+    </footer>
+
+    <script type="module">
+        import cardDB from './js/core/card-database.js';
+        import Deck from './js/core/deck.js';
+
+        let currentDeck = new Deck();
+        let allCards = [];
+
+        async function init() {
+            await cardDB.load('fr');
+            allCards = cardDB.cards;
+            renderCardPool(allCards);
+            updateDeckView();
+        }
+
+        function renderCardPool(cards) {
+            const container = document.getElementById('cardPool');
+            container.innerHTML = cards.map(card => `
+                <div class="card-pool-item" data-fullname="${card.fullName}">
+                    <img src="${card.images?.thumbnail || card.images?.full}" alt="${card.fullName}" loading="lazy">
+                </div>
+            `).join('');
+            document.querySelectorAll('.card-pool-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    currentDeck.addCard(item.dataset.fullname);
+                    updateDeckView();
+                });
+            });
+        }
+
+        function updateDeckView() {
+            const deckCards = document.getElementById('deckCards');
+            deckCards.innerHTML = currentDeck.cards.map(({ fullName, quantity }) => {
+                const card = cardDB.getCardById(fullName);
+                if (!card) return '';
+                return `
+                    <div class="deck-card-item">
+                        <img src="${card.images?.thumbnail || card.images?.full}" alt="${fullName}">
+                        <div class="deck-card-name">${card.name} ${card.version ? ' - ' + card.version : ''}</div>
+                        <div class="deck-card-quantity">
+                            <button data-fullname="${fullName}" data-delta="-1">-</button>
+                            <span>${quantity}</span>
+                            <button data-fullname="${fullName}" data-delta="1">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.querySelectorAll('.deck-card-quantity button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const fullName = btn.dataset.fullname;
+                    const delta = parseInt(btn.dataset.delta);
+                    if (delta > 0) {
+                        currentDeck.addCard(fullName, 1);
+                    } else {
+                        const existing = currentDeck.cards.find(c => c.fullName === fullName);
+                        if (existing && existing.quantity > 1) {
+                            existing.quantity--;
+                        } else {
+                            currentDeck.removeCard(fullName);
+                        }
+                    }
+                    updateDeckView();
+                });
+            });
+
+            const totalCards = currentDeck.getTotalCards();
+            const costCurve = currentDeck.getCostCurve(cardDB);
+            const inkRatio = currentDeck.getInkableRatio(cardDB);
+            document.getElementById('deckStats').innerHTML = `
+                <div>Total cartes : <span>${totalCards}</span></div>
+                <div>Ratio encre : <span>${inkRatio}%</span></div>
+                <div>Courbe de coût : <span>${costCurve.join(' - ')}</span></div>
+            `;
+        }
+
+        document.getElementById('search').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = query ? cardDB.searchCards(query) : allCards;
+            renderCardPool(filtered);
+        });
+
+        document.getElementById('clearDeck').addEventListener('click', () => {
+            currentDeck = new Deck();
+            updateDeckView();
+        });
+
+        init();
+    </script>
+</body>
+</html>
