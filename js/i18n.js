@@ -1,8 +1,8 @@
-// js/i18n.js
 export const translations = {
     fr: {
         loading: "Chargement des cartes...",
         allSets: "Toutes",
+        filterSetLabel: "Extension",
         allColors: "Toutes",
         allCosts: "Tous",
         sortNameAsc: "Nom A-Z",
@@ -26,6 +26,7 @@ export const translations = {
     en: {
         loading: "Loading cards...",
         allSets: "All",
+        filterSetLabel: "Set",
         allColors: "All",
         allCosts: "All",
         sortNameAsc: "Name A-Z",
@@ -49,6 +50,7 @@ export const translations = {
     de: {
         loading: "Karten werden geladen...",
         allSets: "Alle",
+        filterSetLabel: "Edition",
         allColors: "Alle",
         allCosts: "Alle",
         sortNameAsc: "Name A-Z",
@@ -72,6 +74,7 @@ export const translations = {
     it: {
         loading: "Caricamento carte...",
         allSets: "Tutte",
+        filterSetLabel: "Espansione",
         allColors: "Tutti",
         allCosts: "Tutti",
         sortNameAsc: "Nome A-Z",
