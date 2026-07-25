@@ -16,7 +16,7 @@
     --color-sapphire: #3b82f6;
     --color-steel: #94a3b8;
 }
-
+ 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: var(--font-sans);
