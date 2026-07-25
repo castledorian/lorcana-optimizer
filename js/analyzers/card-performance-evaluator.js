@@ -1,8 +1,10 @@
+// js/analyzers/card-performance-evaluator.js
+
 import { simulateGame } from '../simulation/game-simulator.js';
 
 /**
- * Évalue la performance individuelle des cartes d'un deck via simulation Monte Carlo.
- * Retourne des métriques décisionnelles par carte, sans seuils arbitraires.
+ * Évalue la performance individuelle des cartes dans un deck via simulation Monte Carlo.
+ * Produit des métriques objectives : play rate, ink rate, dead draw rate.
  *
  * @module card-performance-evaluator
  */
@@ -10,21 +12,21 @@ import { simulateGame } from '../simulation/game-simulator.js';
 /**
  * @typedef {Object} CardPerformance
  * @property {string} fullName
- * @property {number} playRate - Probabilité d'être jouée (0-1)
- * @property {number} inkRate - Probabilité d'être encrée
- * @property {number} deadRate - Probabilité de rester en main jusqu'à la fin
- * @property {number} avgLoreContribution - Lore moyen gagné par quête de ce personnage (si personnage)
- * @property {number} avgTurnPlayed - Tour moyen où la carte est jouée (si jouée)
+ * @property {number} playRate - Probabilité que la carte soit jouée au moins une fois (0-1)
+ * @property {number} inkRate - Probabilité d'être utilisée comme encre
+ * @property {number} deadRate - Probabilité de rester en main sans être jouée ni encrée
+ * @property {number} avgCopiesPlayed - Nombre moyen d'exemplaires joués par partie
  */
 
 /**
  * Lance N simulations et calcule les métriques pour chaque carte du deck.
- * @param {Deck} deck
- * @param {CardDatabase} cardDB
- * @param {number} [simulations=1000] - Nombre de simulations
+ *
+ * @param {Deck} deck - Instance de Deck
+ * @param {CardDatabase} cardDB - Base de données des cartes
+ * @param {number} [simulations=500] - Nombre de simulations (500 recommandé pour précision correcte)
  * @returns {Map<string, CardPerformance>} Clé = fullName, valeur = métriques
  */
-export function evaluateCardPerformance(deck, cardDB, simulations = 1000) {
+export function evaluateCardPerformance(deck, cardDB, simulations = 500) {
     const totalCards = deck.getTotalCards();
     if (totalCards === 0) return new Map();
 
@@ -32,12 +34,10 @@ export function evaluateCardPerformance(deck, cardDB, simulations = 1000) {
     const accumulators = new Map();
     deck.cards.forEach(({ fullName }) => {
         accumulators.set(fullName, {
-            played: 0,
-            inked: 0,
-            dead: 0,
-            loreSum: 0,
-            turnSum: 0,
-            playedCount: 0,
+            played: 0,          // nombre de simulations où la carte a été jouée au moins une fois
+            inked: 0,           // nombre de simulations où elle a été encrée au moins une fois
+            dead: 0,            // nombre de simulations où elle est restée morte
+            totalCopiesPlayed: 0, // somme des exemplaires joués sur toutes les simulations
             totalSims: 0
         });
     });
@@ -46,25 +46,17 @@ export function evaluateCardPerformance(deck, cardDB, simulations = 1000) {
         const result = simulateGame(deck, cardDB, { maxTurns: 10 });
         const { metrics } = result;
 
-        // Mise à jour pour chaque carte du deck
         accumulators.forEach((acc, fullName) => {
             acc.totalSims++;
-            const played = metrics.cardsPlayed.get(fullName) || 0;
-            if (played > 0) {
+            const playedCount = metrics.cardsPlayed.get(fullName) || 0;
+            if (playedCount > 0) {
                 acc.played++;
-                acc.playedCount += played;
-                // On ne peut pas connaître le tour exact de jeu avec cette simulation simple,
-                // mais on peut approximer en prenant le tour moyen où le premier exemplaire a été joué ?
-                // Pour simplifier, on enregistre juste la quantité jouée.
+                acc.totalCopiesPlayed += playedCount;
             }
-            const inked = metrics.cardsInked.get(fullName) || 0;
-            if (inked > 0) acc.inked++;
-            const dead = metrics.deadDraws.get(fullName) || 0;
-            if (dead > 0) acc.dead++;
-
-            // Contribution Lore : si la carte est un personnage, on suppose que chaque fois qu'il est joué,
-            // il quête chaque tour suivant jusqu'à la fin. Difficile à attribuer exactement.
-            // Pour l'instant, on laisse cette métrique de côté.
+            const inkedCount = metrics.cardsInked.get(fullName) || 0;
+            if (inkedCount > 0) acc.inked++;
+            const deadCount = metrics.deadDraws.get(fullName) || 0;
+            if (deadCount > 0) acc.dead++;
         });
     }
 
@@ -77,8 +69,7 @@ export function evaluateCardPerformance(deck, cardDB, simulations = 1000) {
             playRate: acc.played / totalSims,
             inkRate: acc.inked / totalSims,
             deadRate: acc.dead / totalSims,
-            avgCopiesPlayed: acc.playedCount / totalSims,
-            // avgLoreContribution: ... à implémenter avec une meilleure modélisation
+            avgCopiesPlayed: acc.totalCopiesPlayed / totalSims
         });
     });
 
