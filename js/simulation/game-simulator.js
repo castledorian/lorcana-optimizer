@@ -1,32 +1,58 @@
+// js/simulation/game-simulator.js
+
 /**
- * Moteur de simulation solo d'une partie de Lorcana.
- * Respecte les règles fondamentales (pioche, encre, jeu, quête) sans effets complexes.
- * Permet d'évaluer la performance brute d'un deck (Lore, développement).
+ * Simule une partie solo de Lorcana en respectant les règles de base.
+ * Le jeu est simplifié : pas d'effets, pas d'interaction adverse.
+ * Priorité de jeu : jouer les personnages à fort lore.
  *
  * @module game-simulator
  */
 
 /**
- * Simule une partie et retourne les métriques détaillées.
- * @param {Deck} deck - Le deck à simuler (instance de Deck)
- * @param {CardDatabase} cardDB - Base de données pour résoudre les cartes
+ * @typedef {Object} CardRef
+ * @property {string} fullName
+ * @property {Object} card - Données de la carte (depuis CardDatabase)
+ */
+
+/**
+ * Résultat d'une simulation
+ * @typedef {Object} SimulationResult
+ * @property {number} lore - Lore total gagné
+ * @property {number} inkwell - Encre disponible en fin de partie
+ * @property {number} boardSize - Nombre de personnages sur le plateau
+ * @property {Object} metrics
+ * @property {Map<string, number>} metrics.cardsPlayed - Nombre de fois que chaque carte a été jouée
+ * @property {Map<string, number>} metrics.cardsInked - Nombre de fois que chaque carte a été encrée
+ * @property {Map<string, number>} metrics.deadDraws - Nombre de cartes restées en main sans jouer/encrer
+ * @property {string[]} metrics.startingHand - fullNames de la main de départ
+ * @property {number[]} metrics.loreByTurn
+ * @property {number[]} metrics.inkByTurn
+ * @property {number[]} metrics.boardSizeByTurn
+ * @property {number} turn - Nombre de tours joués
+ */
+
+/**
+ * Simule une partie et retourne les métriques.
+ *
+ * @param {Deck} deck - Instance de Deck
+ * @param {CardDatabase} cardDB - Base de données des cartes
  * @param {Object} [options]
- * @param {number} [options.maxTurns=10] - Nombre de tours maximum
- * @param {Function} [options.mulliganFn] - Fonction(hand) retournant les cartes à défausser
+ * @param {number} [options.maxTurns=10] - Nombre maximum de tours
+ * @param {Function} [options.mulliganFn] - Fonction(hand) retournant les cartes à défausser (CardRef[])
  * @returns {SimulationResult}
  */
 export function simulateGame(deck, cardDB, options = {}) {
     const maxTurns = options.maxTurns ?? 10;
     const mulliganFn = options.mulliganFn ?? defaultMulligan;
 
-    // Initialisation du deck (liste des fullName en quantité)
+    // Préparer le deck physique (liste de fullName)
     const deckList = [];
     deck.cards.forEach(({ fullName, quantity }) => {
         for (let i = 0; i < quantity; i++) deckList.push(fullName);
     });
     shuffle(deckList);
 
-    // Main du joueur
+    // Main de départ
     const hand = deckList.splice(0, 7).map(fullName => resolveCard(fullName, cardDB));
 
     // Mulligan
@@ -34,7 +60,8 @@ export function simulateGame(deck, cardDB, options = {}) {
     toDiscard.forEach(card => {
         const idx = hand.indexOf(card);
         if (idx !== -1) {
-            deckList.push(hand.splice(idx, 1)[0].fullName); // remettre dans le deck
+            const removed = hand.splice(idx, 1)[0];
+            deckList.push(removed.fullName); // remettre dans le deck
         }
     });
     shuffle(deckList);
@@ -43,39 +70,35 @@ export function simulateGame(deck, cardDB, options = {}) {
     }
 
     // État de la partie
-    let inkwell = 0;              // quantité d'encre disponible
-    let board = [];               // personnages en jeu (avec tours restants avant de pouvoir quêter)
+    let inkwell = 0;
+    let board = [];               // { card, summoningSick: boolean }
     let lore = 0;
     let turn = 0;
     const metrics = {
         loreByTurn: [],
         inkByTurn: [],
         boardSizeByTurn: [],
-        cardsPlayed: new Map(),   // fullName -> nombre de fois joué
-        cardsInked: new Map(),    // fullName -> nombre de fois encré
-        deadDraws: new Map(),     // fullName -> nombre de fois resté en main jusqu'à la fin
+        cardsPlayed: new Map(),
+        cardsInked: new Map(),
+        deadDraws: new Map(),
         startingHand: hand.map(c => c.fullName)
     };
 
-    // Le joueur qui commence est aléatoire (pioche au premier tour ou pas)
+    // Déterminer qui commence (aléatoire)
     const isStartingPlayer = Math.random() < 0.5;
     // Si le joueur commence, il ne pioche pas au premier tour
     if (!isStartingPlayer) {
         drawCard(deckList, hand, cardDB);
     }
 
-    while (turn < maxTurns && (deckList.length > 0 || hand.length > 0)) {
+    while (turn < maxTurns && deckList.length + hand.length > 0) {
         turn++;
-        // Phase de début de tour (pioche si ce n'est pas le premier tour du joueur qui commence)
+        // Pioche du tour (sauf premier tour du joueur qui commence)
         if (turn > 1 || !isStartingPlayer) {
-            if (turn > 1) {
-                drawCard(deckList, hand, cardDB);
-            }
-        } else {
-            // Premier tour du joueur qui commence : pas de pioche déjà faite
+            drawCard(deckList, hand, cardDB);
         }
 
-        // Phase d'encre : poser une carte encrable si possible
+        // Phase d'encre
         const inkableCard = hand.find(c => c.card && c.card.inkwell);
         if (inkableCard) {
             inkwell++;
@@ -86,7 +109,7 @@ export function simulateGame(deck, cardDB, options = {}) {
         // Phase principale : jouer les personnages payables
         let availableInk = inkwell;
         const playableCharacters = hand.filter(c => c.card && c.card.type === 'Character' && c.card.cost <= availableInk);
-        // Trier par lore décroissant puis coût décroissant (stratégie simple)
+        // Priorité : plus haut lore, puis plus haut coût (meilleure présence)
         playableCharacters.sort((a, b) => {
             const loreDiff = (b.card.lore || 0) - (a.card.lore || 0);
             if (loreDiff !== 0) return loreDiff;
@@ -97,13 +120,12 @@ export function simulateGame(deck, cardDB, options = {}) {
             if (c.card.cost <= availableInk) {
                 availableInk -= c.card.cost;
                 hand.splice(hand.indexOf(c), 1);
-                // Ajouter au plateau avec summoning sickness : ne peut pas quêter ce tour
                 board.push({ card: c.card, summoningSick: true });
                 metrics.cardsPlayed.set(c.fullName, (metrics.cardsPlayed.get(c.fullName) || 0) + 1);
             }
         }
 
-        // Phase de quête : tous les personnages non malades quêtent
+        // Phase de quête
         let loreThisTurn = 0;
         board.forEach(entry => {
             if (!entry.summoningSick) {
@@ -119,7 +141,7 @@ export function simulateGame(deck, cardDB, options = {}) {
         board.forEach(entry => { entry.summoningSick = false; });
     }
 
-    // Fin de partie : identifier les dead draws (cartes restées en main sans être jouées/encrées)
+    // Cartes restées en main = dead draws
     hand.forEach(c => {
         metrics.deadDraws.set(c.fullName, (metrics.deadDraws.get(c.fullName) || 0) + 1);
     });
@@ -152,6 +174,6 @@ function shuffle(array) {
 }
 
 function defaultMulligan(hand) {
-    // Défausse les cartes non encrables pour maximiser l'encrage tôt
+    // Garder les cartes encrables, défausser les non-encrables
     return hand.filter(c => c.card && !c.card.inkwell);
 }
