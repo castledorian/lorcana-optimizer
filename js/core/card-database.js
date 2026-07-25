@@ -16,14 +16,26 @@ class CardDatabase {
             this.cards = data.cards;
             this.sets = data.sets;
 
-            // Création de searchText pour une recherche étendue
+            // Construction d'un index de recherche étendu
             this.cards.forEach(card => {
                 const subtypes = card.subtypesText || (card.subtypes ? card.subtypes.join(' ') : '');
                 const artists = card.artistsText || (card.artists ? card.artists.join(' ') : '');
                 const story = card.story || '';
                 const flavor = card.flavorText || '';
-                const text = card.text || '';              // ← capacités et mots‑clés
-                card.searchText = `${card.name} ${card.version} ${card.fullName} ${card.simpleName} ${subtypes} ${artists} ${story} ${flavor} ${text}`.toLowerCase();
+                // Capacités : plusieurs variantes possibles selon la source des données
+                const abilities = card.text || card.textFr || card.fullText || '';
+
+                card.searchText = [
+                    card.name,
+                    card.version,
+                    card.fullName,
+                    card.simpleName,
+                    subtypes,
+                    artists,
+                    story,
+                    flavor,
+                    abilities
+                ].join(' ').toLowerCase();
             });
 
             this.ready = true;
@@ -35,11 +47,8 @@ class CardDatabase {
     }
 
     onReady(callback) {
-        if (this.ready) {
-            callback();
-        } else {
-            this.listeners.push(callback);
-        }
+        if (this.ready) callback();
+        else this.listeners.push(callback);
     }
 
     _notifyListeners() {
