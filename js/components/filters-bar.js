@@ -50,6 +50,8 @@ export function createFiltersBar({ onFilterChange }) {
         container.querySelector('#set').value = 'all';
         container.querySelector('#sort').value = 'name-asc';
         document.querySelectorAll('.color-btn, .cost-btn, .inkable-btn').forEach(b => b.classList.remove('active'));
+        // Réinitialiser les filtres des couleurs
+        updateColorFilters();
         if (onFilterChange) onFilterChange();
     });
     container.appendChild(resetBtn);
@@ -77,34 +79,53 @@ export function createFiltersBar({ onFilterChange }) {
     colorContainer.style.gap = '6px';
     colorContainer.style.alignItems = 'center';
 
+    const colorButtons = []; // stockage pour mise à jour facile
+
     colorOrder.forEach(color => {
         const btn = document.createElement('div');
         btn.className = 'color-btn';
-        // Fond hexagonal identique aux coûts
         btn.style.backgroundImage = `url('${costHexSVG}')`;
         btn.style.backgroundSize = 'cover';
         btn.dataset.color = color;
         btn.title = translations[store.language].colorNames[color] || color;
 
-        // Icône de la couleur superposée
         const icon = document.createElement('img');
         icon.src = colorSVGDataURIs[color];
         icon.className = 'color-icon';
-        icon.style.position = 'absolute';
-        icon.style.top = '50%';
-        icon.style.left = '50%';
-        icon.style.transform = 'translate(-50%, -50%)';
-        icon.style.width = '22px';
-        icon.style.height = '22px';
-        icon.style.pointerEvents = 'none';
         btn.appendChild(icon);
 
         btn.addEventListener('click', () => {
             btn.classList.toggle('active');
+            updateColorFilters();
             if (onFilterChange) onFilterChange();
         });
+
         colorContainer.appendChild(btn);
+        colorButtons.push(btn);
     });
+
+    // Fonction de mise à jour des filtres visuels des couleurs
+    function updateColorFilters() {
+        const anyActive = colorButtons.some(b => b.classList.contains('active'));
+        colorButtons.forEach(btn => {
+            const isActive = btn.classList.contains('active');
+            if (isActive) {
+                // Surbrillance pour l'actif
+                btn.style.filter = 'brightness(1.4) drop-shadow(0 0 4px var(--accent-gold-glow))';
+            } else {
+                if (anyActive) {
+                    // Si d'autres sont actifs, on grise celle-ci
+                    btn.style.filter = 'grayscale(100%) brightness(0.7)';
+                } else {
+                    // Aucune active : apparence normale
+                    btn.style.filter = 'brightness(0.8)';
+                }
+            }
+        });
+    }
+
+    // Appliquer l'état initial (aucune active)
+    updateColorFilters();
 
     // --- Conteneur des coûts ---
     const costContainer = container.querySelector('#costButtonsContainer');
