@@ -1,3 +1,4 @@
+// js/views/deck-analyzer.js
 import { store } from '../store.js';
 import { analyzeDeck } from '../analyzers/deck-analyzer.js';
 import { evaluateCardPerformance } from '../analyzers/card-performance-evaluator.js';
@@ -43,6 +44,7 @@ export function createDeckAnalyzerView() {
     const runSimulation = async (deck) => {
         const btn = document.getElementById('run-simulation-btn');
         const resultsDiv = document.getElementById('sim-results');
+        if (!btn || !resultsDiv) return;
         btn.disabled = true;
         btn.textContent = '⏳ Simulation en cours... (peut prendre quelques secondes)';
         resultsDiv.innerHTML = '';
@@ -58,7 +60,7 @@ export function createDeckAnalyzerView() {
             }
             btn.disabled = false;
             btn.textContent = '⚡ Relancer la simulation';
-        }, 50); // léger délai pour que l'UI se mette à jour
+        }, 50);
     };
 
     store.on('deck-changed', update);
@@ -87,7 +89,6 @@ function renderPerformanceTable(perfMap, deck) {
         const deadRate = (perf.deadRate * 100).toFixed(1);
         const avgCopies = perf.avgCopiesPlayed.toFixed(2);
 
-        // Indicateur visuel : barre de play rate
         const playBar = `<div style="background:var(--surface-card); height:6px; border-radius:3px; width:100px; display:inline-block; margin-left:8px;"><div style="width:${playRate}%; height:100%; background:#4caf50; border-radius:3px;"></div></div>`;
         const deadBar = `<div style="background:var(--surface-card); height:6px; border-radius:3px; width:100px; display:inline-block; margin-left:8px;"><div style="width:${deadRate}%; height:100%; background:#f44336; border-radius:3px;"></div></div>`;
 
@@ -130,7 +131,6 @@ function renderPerformanceTable(perfMap, deck) {
     `;
 }
 
-// Reprise de la fonction renderAnalysis existante (inchangée)
 function renderAnalysis(a) {
     if (a.error) return `<p style="color:var(--text-muted)">${a.error}</p>`;
 
