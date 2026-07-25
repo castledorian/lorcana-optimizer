@@ -1,5 +1,6 @@
 import { store } from '../store.js';
 import { analyzeDeck } from '../analyzers/deck-analyzer.js';
+import { evaluateCardPerformance } from '../analyzers/card-performance-evaluator.js';
 
 export function createDeckAnalyzerView() {
     const container = document.createElement('div');
@@ -17,11 +18,47 @@ export function createDeckAnalyzerView() {
     content.id = 'analyzer-content';
     container.appendChild(content);
 
+    // Zone pour les résultats de simulation
+    const simSection = document.createElement('div');
+    simSection.id = 'simulation-section';
+    simSection.style.marginTop = '40px';
+    container.appendChild(simSection);
+
     const update = () => {
         const deck = store.currentDeck;
         if (!deck) return;
         const analysis = analyzeDeck(deck, store.cardDB);
         content.innerHTML = renderAnalysis(analysis);
+        // Réinitialiser la section de simulation
+        simSection.innerHTML = `
+            <h3 style="color:var(--accent-gold); margin-bottom:12px;">Performance par carte (simulation Monte Carlo)</h3>
+            <button id="run-simulation-btn" class="clear-filters-btn" style="font-size:14px; padding:8px 16px;">
+                ⚡ Lancer la simulation (500 parties)
+            </button>
+            <div id="sim-results" style="margin-top:16px;"></div>
+        `;
+        document.getElementById('run-simulation-btn').addEventListener('click', () => runSimulation(deck));
+    };
+
+    const runSimulation = async (deck) => {
+        const btn = document.getElementById('run-simulation-btn');
+        const resultsDiv = document.getElementById('sim-results');
+        btn.disabled = true;
+        btn.textContent = '⏳ Simulation en cours... (peut prendre quelques secondes)';
+        resultsDiv.innerHTML = '';
+
+        // Lancer la simulation de façon asynchrone
+        setTimeout(() => {
+            try {
+                const perfMap = evaluateCardPerformance(deck, store.cardDB, 500);
+                resultsDiv.innerHTML = renderPerformanceTable(perfMap, deck);
+            } catch (e) {
+                resultsDiv.innerHTML = `<p style="color:var(--text-muted);">Erreur lors de la simulation.</p>`;
+                console.error(e);
+            }
+            btn.disabled = false;
+            btn.textContent = '⚡ Relancer la simulation';
+        }, 50); // léger délai pour que l'UI se mette à jour
     };
 
     store.on('deck-changed', update);
@@ -38,6 +75,62 @@ export function createDeckAnalyzerView() {
     return view;
 }
 
+function renderPerformanceTable(perfMap, deck) {
+    if (!perfMap || perfMap.size === 0) return '<p style="color:var(--text-muted);">Aucune donnée de simulation disponible.</p>';
+
+    const rows = [];
+    for (const [fullName, perf] of perfMap) {
+        const card = store.cardDB.getCardById(fullName);
+        const displayName = card ? card.fullName : fullName;
+        const playRate = (perf.playRate * 100).toFixed(1);
+        const inkRate = (perf.inkRate * 100).toFixed(1);
+        const deadRate = (perf.deadRate * 100).toFixed(1);
+        const avgCopies = perf.avgCopiesPlayed.toFixed(2);
+
+        // Indicateur visuel : barre de play rate
+        const playBar = `<div style="background:var(--surface-card); height:6px; border-radius:3px; width:100px; display:inline-block; margin-left:8px;"><div style="width:${playRate}%; height:100%; background:#4caf50; border-radius:3px;"></div></div>`;
+        const deadBar = `<div style="background:var(--surface-card); height:6px; border-radius:3px; width:100px; display:inline-block; margin-left:8px;"><div style="width:${deadRate}%; height:100%; background:#f44336; border-radius:3px;"></div></div>`;
+
+        rows.push(`
+            <tr>
+                <td style="font-weight:500;">${displayName}</td>
+                <td>${playRate}% ${playBar}</td>
+                <td>${inkRate}%</td>
+                <td>${deadRate}% ${deadBar}</td>
+                <td>${avgCopies}</td>
+            </tr>
+        `);
+    }
+
+    return `
+        <table style="width:100%; border-collapse: collapse; margin-top:12px;">
+            <thead>
+                <tr style="border-bottom:1px solid var(--border-color); text-align:left;">
+                    <th style="padding:8px;">Carte</th>
+                    <th style="padding:8px;">Taux de jeu</th>
+                    <th style="padding:8px;">Taux d'encrage</th>
+                    <th style="padding:8px;">Taux de carte morte</th>
+                    <th style="padding:8px;">Copies jouées (moy.)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.join('')}
+            </tbody>
+        </table>
+        <p style="color:var(--text-muted); font-size:12px; margin-top:8px;">
+            <strong>Taux de jeu</strong> : probabilité que la carte soit jouée au moins une fois en 10 tours.<br>
+            <strong>Taux d'encrage</strong> : probabilité qu'elle soit utilisée comme encre.<br>
+            <strong>Taux de carte morte</strong> : probabilité qu'elle reste en main sans être ni jouée ni encrée.<br>
+            <strong>Copies jouées</strong> : nombre moyen d'exemplaires mis en jeu par partie.
+        </p>
+        <p style="color:var(--text-muted); font-size:12px; margin-top:12px;">
+            Ces métriques vous aident à identifier les cartes les moins impactantes (taux de jeu faible, taux mort élevé)
+            ou celles qui servent surtout d'encre (taux d'encrage élevé, peu de jeu).
+        </p>
+    `;
+}
+
+// Reprise de la fonction renderAnalysis existante (inchangée)
 function renderAnalysis(a) {
     if (a.error) return `<p style="color:var(--text-muted)">${a.error}</p>`;
 
