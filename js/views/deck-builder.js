@@ -3,7 +3,6 @@ import { createCardPool } from '../components/card-pool.js';
 import { createDeckPanel } from '../components/deck-panel.js';
 import { createLanguageSelector } from '../components/language-selector.js';
 import { importDeckFromText, exportDeckToText } from '../core/deck-io.js';
-import Deck from '../core/deck.js';
 
 export function createDeckBuilderView() {
     const container = document.createElement('div');
@@ -37,7 +36,7 @@ export function createDeckBuilderView() {
 
     // Boutons Importer / Exporter
     const importBtn = document.createElement('button');
-    importBtn.className = 'clear-filters-btn'; // réutilisation du style
+    importBtn.className = 'clear-filters-btn';
     importBtn.textContent = '📥 Importer';
     importBtn.style.cssText = 'font-size:12px; padding:6px 12px;';
     topRow.appendChild(importBtn);
@@ -60,7 +59,7 @@ export function createDeckBuilderView() {
     mainContainer.appendChild(deckPanel.element);
     container.appendChild(mainContainer);
 
-    // --- Zone d'import (cachée par défaut) ---
+    // --- Zone d'import (modale) ---
     const importArea = document.createElement('div');
     importArea.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:200; justify-content:center; align-items:center;';
     importArea.innerHTML = `
@@ -76,24 +75,29 @@ export function createDeckBuilderView() {
     `;
     container.appendChild(importArea);
 
+    // Récupération des références internes à importArea (avant de les utiliser)
+    const importTextarea = importArea.querySelector('#import-textarea');
+    const importMessage = importArea.querySelector('#import-message');
+    const importCancelBtn = importArea.querySelector('#import-cancel-btn');
+    const importLoadBtn = importArea.querySelector('#import-load-btn');
+
     // Gestion de l'import
     importBtn.addEventListener('click', () => {
         importArea.style.display = 'flex';
-        document.getElementById('import-textarea').value = '';
-        document.getElementById('import-message').textContent = '';
+        importTextarea.value = '';
+        importMessage.textContent = '';
     });
 
     const cancelImport = () => { importArea.style.display = 'none'; };
-    document.getElementById('import-cancel-btn').addEventListener('click', cancelImport);
+    importCancelBtn.addEventListener('click', cancelImport);
     importArea.addEventListener('click', (e) => { if (e.target === importArea) cancelImport(); });
 
-    document.getElementById('import-load-btn').addEventListener('click', () => {
-        const text = document.getElementById('import-textarea').value;
+    importLoadBtn.addEventListener('click', () => {
+        const text = importTextarea.value;
         const result = importDeckFromText(text);
         if (result.unknown.length > 0) {
-            document.getElementById('import-message').textContent = `Cartes non reconnues : ${result.unknown.join(', ')}`;
+            importMessage.textContent = `Cartes non reconnues : ${result.unknown.join(', ')}`;
         } else {
-            // Remplacer le deck
             store.setDeck(result.deck);
             importArea.style.display = 'none';
         }
@@ -107,7 +111,6 @@ export function createDeckBuilderView() {
             navigator.clipboard.writeText(text).then(() => {
                 alert('Deck copié dans le presse-papiers !');
             }).catch(() => {
-                // Fallback : montrer le texte dans une zone
                 const win = window.open('', '_blank', 'width=600,height=400');
                 win.document.write('<pre>' + text + '</pre>');
                 win.document.close();
