@@ -34,7 +34,7 @@ function resolveRoute() {
         newView = factory();
     } catch (e) {
         console.error('Erreur lors de la création de la vue :', e);
-        app.innerHTML = '<div style="text-align:center;padding:60px;">Impossible de charger la page.</div>';
+        app.innerHTML = '<div style="text-align:center;padding:60px;">Impossible de charger la page. Veuillez réessayer.</div>';
         return;
     }
 
