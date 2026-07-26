@@ -29,7 +29,12 @@ export function createDeckAnalyzerView() {
     optSection.style.marginTop = '40px';
     container.appendChild(optSection);
 
+    let isDestroyed = false;      // pour annuler les simulations en cours
+    let currentSimDeck = null;    // deck en cours de simulation
+    let simTimeoutId = null;
+
     function update() {
+        if (isDestroyed) return;
         const deck = store.currentDeck;
         if (!deck) {
             content.innerHTML = '<p style="color:var(--text-muted);">Deck non initialisé.</p>';
@@ -41,7 +46,7 @@ export function createDeckAnalyzerView() {
         const analysis = analyzeDeck(deck, store.cardDB);
         content.innerHTML = renderAnalysis(analysis);
 
-        // Simulation Monte Carlo
+        // --- Section Simulation Monte Carlo ---
         simSection.innerHTML = `
             <h3 style="color:var(--accent-gold); margin-bottom:12px;">Performance par carte (simulation Monte Carlo)</h3>
             <button id="run-simulation-btn" class="clear-filters-btn" style="font-size:14px; padding:8px 16px;">
@@ -50,7 +55,21 @@ export function createDeckAnalyzerView() {
             <div id="sim-results" style="margin-top:16px;"></div>
         `;
 
-        // Optimisation des copies
+        // Attacher l'événement directement
+        const runSimBtn = simSection.querySelector('#run-simulation-btn');
+        const simResultsDiv = simSection.querySelector('#sim-results');
+        if (runSimBtn) {
+            runSimBtn.addEventListener('click', () => {
+                if (isDestroyed) return;
+                if (!store.cardDB || !store.cardDB.ready) {
+                    simResultsDiv.innerHTML = '<p style="color:var(--text-muted);">Base de données non chargée.</p>';
+                    return;
+                }
+                runSimulation(deck, runSimBtn, simResultsDiv);
+            });
+        }
+
+        // --- Section Optimisation ---
         optSection.innerHTML = `
             <h3 style="color:var(--accent-gold); margin-bottom:12px;">Optimisation des quantités (Copy Optimizer)</h3>
             <button id="run-optimizer-btn" class="clear-filters-btn" style="font-size:14px; padding:8px 16px;">
@@ -59,39 +78,31 @@ export function createDeckAnalyzerView() {
             <div id="opt-results" style="margin-top:16px;"></div>
         `;
 
-        requestAnimationFrame(() => {
-            const runSimBtn = simSection.querySelector('#run-simulation-btn');
-            const simResultsDiv = simSection.querySelector('#sim-results');
-            if (runSimBtn) {
-                runSimBtn.addEventListener('click', () => {
-                    if (!store.cardDB || !store.cardDB.ready) {
-                        simResultsDiv.innerHTML = '<p style="color:var(--text-muted);">Base de données non chargée.</p>';
-                        return;
-                    }
-                    runSimulation(deck, runSimBtn, simResultsDiv);
-                });
-            }
-
-            const optBtn = optSection.querySelector('#run-optimizer-btn');
-            const optResultsDiv = optSection.querySelector('#opt-results');
-            if (optBtn) {
-                optBtn.addEventListener('click', () => {
-                    if (!store.cardDB || !store.cardDB.ready) {
-                        optResultsDiv.innerHTML = '<p style="color:var(--text-muted);">Base de données non chargée.</p>';
-                        return;
-                    }
-                    runOptimizer(deck, optBtn, optResultsDiv);
-                });
-            }
-        });
+        const optBtn = optSection.querySelector('#run-optimizer-btn');
+        const optResultsDiv = optSection.querySelector('#opt-results');
+        if (optBtn) {
+            optBtn.addEventListener('click', () => {
+                if (isDestroyed) return;
+                if (!store.cardDB || !store.cardDB.ready) {
+                    optResultsDiv.innerHTML = '<p style="color:var(--text-muted);">Base de données non chargée.</p>';
+                    return;
+                }
+                runOptimizer(deck, optBtn, optResultsDiv);
+            });
+        }
     }
 
     function runSimulation(deck, btn, resultsDiv) {
+        if (isDestroyed) return;
         btn.disabled = true;
         btn.textContent = '⏳ Simulation en cours... (quelques secondes)';
         resultsDiv.innerHTML = '';
 
-        setTimeout(() => {
+        // Annuler tout timeout précédent
+        if (simTimeoutId) clearTimeout(simTimeoutId);
+
+        simTimeoutId = setTimeout(() => {
+            if (isDestroyed) return;
             try {
                 const perfMap = evaluateCardPerformance(deck, store.cardDB, 500);
                 resultsDiv.innerHTML = renderPerformanceTable(perfMap, deck);
@@ -101,15 +112,20 @@ export function createDeckAnalyzerView() {
             }
             btn.disabled = false;
             btn.textContent = '⚡ Relancer la simulation';
+            simTimeoutId = null;
         }, 50);
     }
 
     function runOptimizer(deck, btn, resultsDiv) {
+        if (isDestroyed) return;
         btn.disabled = true;
         btn.textContent = '⏳ Optimisation en cours... (peut être long)';
         resultsDiv.innerHTML = '';
 
-        setTimeout(() => {
+        if (simTimeoutId) clearTimeout(simTimeoutId);
+
+        simTimeoutId = setTimeout(() => {
+            if (isDestroyed) return;
             try {
                 const results = optimizeCopies(deck, store.cardDB, 500);
                 resultsDiv.innerHTML = renderOptimizationResults(results);
@@ -119,19 +135,26 @@ export function createDeckAnalyzerView() {
             }
             btn.disabled = false;
             btn.textContent = '⚡ Relancer l\'optimisation';
+            simTimeoutId = null;
         }, 50);
     }
 
-    store.on('deck-changed', update);
+    // Écouteurs du store
+    const onDeckChanged = update;
+    const onDataLoaded = update;
+
+    store.on('deck-changed', onDeckChanged);
     if (store.cardDB && store.cardDB.ready) {
         update();
     } else {
-        store.on('data-loaded', update);
+        store.on('data-loaded', onDataLoaded);
     }
 
     const destroy = () => {
-        store.off('deck-changed', update);
-        store.off('data-loaded', update);
+        isDestroyed = true;
+        if (simTimeoutId) clearTimeout(simTimeoutId);
+        store.off('deck-changed', onDeckChanged);
+        store.off('data-loaded', onDataLoaded);
     };
 
     const view = container;
