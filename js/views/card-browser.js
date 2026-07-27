@@ -121,23 +121,35 @@ export function createCardBrowserView() {
         let filtered = cards.slice();
         if (selectedSet !== 'all') filtered = filtered.filter(c => c.setCode === selectedSet);
 
-        // Couleurs
+        // Couleurs sélectionnées
         const selectedColors = new Set();
         document.querySelectorAll('.color-btn.active').forEach(btn => selectedColors.add(btn.dataset.color));
+
+        // Récupérer le mode de filtrage couleur
+        let colorFilterMode = 'filterTypeAll';
+        const activeTypeBtn = document.querySelector('#colorTypeButtons button.active');
+        if (activeTypeBtn) {
+            colorFilterMode = activeTypeBtn.dataset.type;
+        }
+
         if (selectedColors.size > 0) {
             filtered = filtered.filter(card => {
                 const cardColors = getNormalizedColors(card);
-                if (selectedColors.size === 1) {
-                    return cardColors.length === 1 && cardColors[0] === [...selectedColors][0];
-                } else if (selectedColors.size === 2) {
-                    const sortedSelection = [...selectedColors].sort();
-                    return cardColors.length === 2 &&
-                           cardColors[0] === sortedSelection[0] &&
-                           cardColors[1] === sortedSelection[1];
-                } else {
-                    return cardColors.length === 2 &&
-                           cardColors.every(c => selectedColors.has(c));
+                const hasOneColor = cardColors.length === 1;
+                const hasTwoColors = cardColors.length === 2;
+                const allColorsInSelection = cardColors.every(c => selectedColors.has(c));
+
+                if (colorFilterMode === 'filterTypeAll') {
+                    // Accepter toutes les cartes (mono ou bicolores) dont les couleurs sont dans la sélection
+                    return (hasOneColor || hasTwoColors) && allColorsInSelection;
+                } else if (colorFilterMode === 'filterTypeMono') {
+                    // Uniquement les monocolores exactement d'une couleur sélectionnée
+                    return hasOneColor && selectedColors.has(cardColors[0]);
+                } else if (colorFilterMode === 'filterTypeBi') {
+                    // Uniquement les bicolores dont les deux couleurs sont dans la sélection
+                    return hasTwoColors && allColorsInSelection;
                 }
+                return false;
             });
         }
 
@@ -157,7 +169,7 @@ export function createCardBrowserView() {
         const onlyInkable = document.querySelector('.inkable-btn.active') !== null;
         if (onlyInkable) filtered = filtered.filter(c => c.inkwell === true);
 
-        // Recherche textuelle (utilise searchText enrichi)
+        // Recherche textuelle
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             filtered = filtered.filter(c => c.searchText && c.searchText.includes(q));
