@@ -599,3 +599,18 @@ body {
     content: '• ';
     color: var(--accent-gold);
 }
+
+/* Groupe de boutons Type de couleur */
+#colorTypeButtons {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+#colorTypeButtons button.active {
+    background: var(--accent-gold) !important;
+    color: #000 !important;
+    border-color: var(--accent-gold) !important;
+}
