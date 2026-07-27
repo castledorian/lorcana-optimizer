@@ -32,6 +32,12 @@ export function createFiltersBar({ onFilterChange }) {
     inkGroup.innerHTML = '<label>Encre</label><div class="icon-buttons" id="inkableButton"></div>';
     container.appendChild(inkGroup);
 
+    // Nouveau groupe : Type de couleur
+    const colorTypeGroup = document.createElement('div');
+    colorTypeGroup.className = 'filter-group';
+    colorTypeGroup.innerHTML = '<label>Type</label><div class="icon-buttons" id="colorTypeButtons"></div>';
+    container.appendChild(colorTypeGroup);
+
     // Tri
     const sortGroup = document.createElement('div');
     sortGroup.className = 'filter-group';
@@ -53,6 +59,23 @@ export function createFiltersBar({ onFilterChange }) {
         container.querySelector('#sort').value = 'name-asc';
         document.querySelectorAll('.color-btn, .cost-btn, .inkable-btn').forEach(b => b.classList.remove('active'));
         updateColorFilters();
+
+        // Réinitialiser les boutons de type
+        const typeBtns = container.querySelectorAll('#colorTypeButtons button');
+        typeBtns.forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'var(--surface-color)';
+            b.style.color = 'var(--text-muted)';
+            b.style.borderColor = 'var(--border-color)';
+        });
+        const allBtn = container.querySelector('#colorTypeButtons [data-type="filterTypeAll"]');
+        if (allBtn) {
+            allBtn.classList.add('active');
+            allBtn.style.background = 'var(--accent-gold)';
+            allBtn.style.color = '#000';
+            allBtn.style.borderColor = 'var(--accent-gold)';
+        }
+
         if (onFilterChange) onFilterChange();
     });
     container.appendChild(resetBtn);
@@ -166,6 +189,39 @@ export function createFiltersBar({ onFilterChange }) {
     });
     inkContainer.appendChild(inkBtn);
 
+    // Boutons Type de couleur
+    const colorTypeContainer = container.querySelector('#colorTypeButtons');
+    ['filterTypeAll', 'filterTypeMono', 'filterTypeBi'].forEach(key => {
+        const btn = document.createElement('button');
+        btn.className = 'clear-filters-btn';
+        btn.textContent = translations[store.language][key];
+        btn.dataset.type = key;
+        btn.style.cssText = 'font-size:11px; padding:4px 8px; border:1px solid var(--border-color); border-radius:4px; background:var(--surface-color); color:var(--text-muted); cursor:pointer; white-space:nowrap; transition: all 0.2s;';
+        btn.addEventListener('click', () => {
+            colorTypeContainer.querySelectorAll('button').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'var(--surface-color)';
+                b.style.color = 'var(--text-muted)';
+                b.style.borderColor = 'var(--border-color)';
+            });
+            btn.classList.add('active');
+            btn.style.background = 'var(--accent-gold)';
+            btn.style.color = '#000';
+            btn.style.borderColor = 'var(--accent-gold)';
+            if (onFilterChange) onFilterChange();
+        });
+        colorTypeContainer.appendChild(btn);
+    });
+
+    // Activer "Toutes" par défaut
+    const defaultTypeBtn = colorTypeContainer.querySelector('[data-type="filterTypeAll"]');
+    if (defaultTypeBtn) {
+        defaultTypeBtn.classList.add('active');
+        defaultTypeBtn.style.background = 'var(--accent-gold)';
+        defaultTypeBtn.style.color = '#000';
+        defaultTypeBtn.style.borderColor = 'var(--accent-gold)';
+    }
+
     // Événements de changement
     container.querySelector('#set').addEventListener('change', onFilterChange);
     container.querySelector('#sort').addEventListener('change', onFilterChange);
@@ -173,7 +229,7 @@ export function createFiltersBar({ onFilterChange }) {
     // Mise à jour de la langue
     store.on('language-changed', () => {
         setGroup.querySelector('label').textContent = translations[store.language].filterSetLabel;
-        sortGroup.querySelector('label').textContent = 'Tri'; // ou une clé de traduction si on veut
+        sortGroup.querySelector('label').textContent = 'Tri'; // ou traduire si nécessaire
         const sortSelect = container.querySelector('#sort');
         sortSelect.options[0].textContent = translations[store.language].sortNameAsc;
         sortSelect.options[1].textContent = translations[store.language].sortNameDesc;
@@ -182,6 +238,12 @@ export function createFiltersBar({ onFilterChange }) {
         container.querySelectorAll('.color-btn').forEach(btn => {
             const color = btn.dataset.color;
             btn.title = translations[store.language].colorNames[color] || color;
+        });
+        // Mettre à jour les boutons de type
+        const typeBtns = container.querySelectorAll('#colorTypeButtons button');
+        typeBtns.forEach(btn => {
+            const key = btn.dataset.type;
+            btn.textContent = translations[store.language][key];
         });
     });
 
