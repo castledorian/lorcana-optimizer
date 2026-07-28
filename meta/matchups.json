@@ -1,0 +1,48 @@
+{
+  "updated": "2026-07-28",
+  "source": "duels.ink",
+  "matchups": [
+    {
+      "archetypeA": "Ruby/Amethyst",
+      "archetypeB": "Emerald/Steel",
+      "gamesPlayed": 500,
+      "winrateA": 48.5,
+      "winrateB": 51.5
+    },
+    {
+      "archetypeA": "Ruby/Amethyst",
+      "archetypeB": "Amber/Sapphire",
+      "gamesPlayed": 450,
+      "winrateA": 57.1,
+      "winrateB": 42.9
+    },
+    {
+      "archetypeA": "Ruby/Amethyst",
+      "archetypeB": "Ruby/Sapphire",
+      "gamesPlayed": 400,
+      "winrateA": 52.0,
+      "winrateB": 48.0
+    },
+    {
+      "archetypeA": "Emerald/Steel",
+      "archetypeB": "Amber/Sapphire",
+      "gamesPlayed": 380,
+      "winrateA": 49.2,
+      "winrateB": 50.8
+    },
+    {
+      "archetypeA": "Emerald/Steel",
+      "archetypeB": "Ruby/Sapphire",
+      "gamesPlayed": 350,
+      "winrateA": 53.8,
+      "winrateB": 46.2
+    },
+    {
+      "archetypeA": "Amber/Sapphire",
+      "archetypeB": "Ruby/Sapphire",
+      "gamesPlayed": 320,
+      "winrateA": 55.2,
+      "winrateB": 44.8
+    }
+  ]
+}
