@@ -3,6 +3,7 @@ import { store } from '../store.js';
 import { analyzeDeck } from '../analyzers/deck-analyzer.js';
 import { evaluateCardPerformance } from '../analyzers/card-performance-evaluator.js';
 import { optimizeCopies } from '../optimizer/copy-optimizer.js';
+import metaStore from '../core/meta-store.js';
 
 export function createDeckAnalyzerView() {
     const container = document.createElement('div');
@@ -53,6 +54,11 @@ export function createDeckAnalyzerView() {
     optSection.style.marginTop = '40px';
     main.appendChild(optSection);
 
+    const metaSection = document.createElement('div');
+    metaSection.id = 'meta-section';
+    metaSection.style.marginTop = '40px';
+    main.appendChild(metaSection);
+
     let isDestroyed = false;
     let simTimeoutId = null;
 
@@ -63,6 +69,7 @@ export function createDeckAnalyzerView() {
             content.innerHTML = '<p style="color:var(--text-muted);">Deck non initialisé.</p>';
             simSection.innerHTML = '';
             optSection.innerHTML = '';
+            metaSection.innerHTML = '';
             return;
         }
 
@@ -102,6 +109,41 @@ export function createDeckAnalyzerView() {
                 runOptimizer(deck, optBtn, optResultsDiv);
             });
         }
+
+        // --- Méta ---
+        updateMetaSection(deck);
+    }
+
+    function updateMetaSection(deck) {
+        const deckColors = getDeckColors(deck);
+        let html = '<h3 style="color:var(--accent-gold); margin-bottom:12px;">Données Méta</h3>';
+
+        if (deckColors.length === 0) {
+            html += '<p style="color:var(--text-muted);">Ajoutez des cartes pour connaître le winrate de cet archétype.</p>';
+        } else {
+            const winrate = metaStore.getArchetypeWinrate(deckColors);
+            if (winrate !== null) {
+                html += `<p>Winrate global de l'archétype <strong>${deckColors.join('/')}</strong> : <span style="color:var(--accent-gold); font-weight:bold;">${winrate}%</span> (basé sur les données méta).</p>`;
+            } else {
+                html += `<p style="color:var(--text-muted);">Pas encore de données pour l'archétype ${deckColors.join('/')}.</p>`;
+            }
+        }
+        metaSection.innerHTML = html;
+    }
+
+    function getDeckColors(deck) {
+        const colorSet = new Set();
+        deck.cards.forEach(({ fullName }) => {
+            const card = store.cardDB.getCardById(fullName);
+            if (card) {
+                card.color.split('-').forEach(c => {
+                    const trimmed = c.trim();
+                    // conversion éventuelle avec translations mais on peut simplifier
+                    colorSet.add(trimmed);
+                });
+            }
+        });
+        return [...colorSet].filter(c => ['Amber', 'Amethyst', 'Emerald', 'Ruby', 'Sapphire', 'Steel'].includes(c));
     }
 
     function runSimulation(deck, btn, resultsDiv) {
@@ -155,6 +197,10 @@ export function createDeckAnalyzerView() {
     } else {
         store.on('data-loaded', onDataLoaded);
     }
+    // Recharger les données méta si elles arrivent plus tard
+    metaStore.onReady(() => {
+        if (!isDestroyed) updateMetaSection(store.currentDeck);
+    });
 
     const destroy = () => {
         isDestroyed = true;
@@ -168,7 +214,7 @@ export function createDeckAnalyzerView() {
     return view;
 }
 
-// ---------- Fonctions de rendu ----------
+// ---------- Fonctions de rendu (inchangées mais incluses) ----------
 
 function renderPerformanceTable(perfMap, deck) {
     if (!perfMap || perfMap.size === 0) return '<p style="color:var(--text-muted);">Aucune donnée de simulation disponible.</p>';
