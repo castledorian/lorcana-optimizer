@@ -1,0 +1,39 @@
+{
+  "updated": "2026-07-28",
+  "source": "exemple",
+  "archetypes": [
+    {
+      "name": "Ruby/Amethyst",
+      "colors": ["Ruby", "Amethyst"],
+      "globalWinrate": 54.2,
+      "gamesPlayed": 1200,
+      "matchups": {
+        "Emerald/Steel": 48.5,
+        "Amber/Sapphire": 57.1,
+        "Ruby/Sapphire": 52.0
+      }
+    },
+    {
+      "name": "Emerald/Steel",
+      "colors": ["Emerald", "Steel"],
+      "globalWinrate": 51.3,
+      "gamesPlayed": 980,
+      "matchups": {
+        "Ruby/Amethyst": 51.5,
+        "Amber/Sapphire": 49.2,
+        "Ruby/Sapphire": 53.8
+      }
+    },
+    {
+      "name": "Amber/Sapphire",
+      "colors": ["Amber", "Sapphire"],
+      "globalWinrate": 49.8,
+      "gamesPlayed": 850,
+      "matchups": {
+        "Ruby/Amethyst": 42.9,
+        "Emerald/Steel": 50.8,
+        "Ruby/Sapphire": 55.2
+      }
+    }
+  ]
+}
