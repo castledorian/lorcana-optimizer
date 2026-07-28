@@ -1,0 +1,31 @@
+{
+  "updated": "2026-07-28",
+  "source": "duels.ink",
+  "cardWinrates": [
+    {
+      "fullName": "Genie - Wish Fulfilled",
+      "winrate": 58.3,
+      "gamesPlayed": 1500
+    },
+    {
+      "fullName": "Rabbit - Hunny Paladin",
+      "winrate": 55.1,
+      "gamesPlayed": 1400
+    },
+    {
+      "fullName": "Let It Go",
+      "winrate": 54.8,
+      "gamesPlayed": 1300
+    },
+    {
+      "fullName": "Hades - Looking for a Deal",
+      "winrate": 53.2,
+      "gamesPlayed": 1100
+    },
+    {
+      "fullName": "Winnie the Pooh - Hunny Archmage",
+      "winrate": 52.4,
+      "gamesPlayed": 1000
+    }
+  ]
+}
