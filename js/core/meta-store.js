@@ -2,22 +2,35 @@
 class MetaStore {
     constructor() {
         this.archetypes = [];
+        this.matchups = [];
+        this.cardWinrates = [];
         this.ready = false;
         this.listeners = [];
     }
 
     async load() {
         try {
-            const response = await fetch('meta/archetypes.json');
-            if (!response.ok) throw new Error(`Erreur HTTP ${response.status}`);
-            const data = await response.json();
-            this.archetypes = data.archetypes || [];
-            this.updated = data.updated;
-            this.ready = true;
-            this._notifyListeners();
+            const [archetypesResp, matchupsResp, cardWinratesResp] = await Promise.allSettled([
+                fetch('meta/archetypes.json'),
+                fetch('meta/matchups.json'),
+                fetch('meta/card_winrates.json')
+            ]);
+
+            if (archetypesResp.status === 'fulfilled' && archetypesResp.value.ok) {
+                const data = await archetypesResp.value.json();
+                this.archetypes = data.archetypes || [];
+            }
+            if (matchupsResp.status === 'fulfilled' && matchupsResp.value.ok) {
+                const data = await matchupsResp.value.json();
+                this.matchups = data.matchups || [];
+            }
+            if (cardWinratesResp.status === 'fulfilled' && cardWinratesResp.value.ok) {
+                const data = await cardWinratesResp.value.json();
+                this.cardWinrates = data.cardWinrates || [];
+            }
         } catch (err) {
-            console.warn('Données méta non chargées :', err.message);
-            // On ne bloque pas l'application
+            console.warn('Erreur lors du chargement des données méta :', err);
+        } finally {
             this.ready = true;
             this._notifyListeners();
         }
@@ -35,8 +48,6 @@ class MetaStore {
 
     /**
      * Retourne le winrate global d'un archétype basé sur ses couleurs.
-     * @param {string[]} colors - exemple ['Ruby', 'Amethyst']
-     * @returns {number|null} winrate (0-100) ou null si inconnu
      */
     getArchetypeWinrate(colors) {
         const sortedColors = [...colors].sort().join('/');
@@ -48,17 +59,19 @@ class MetaStore {
     }
 
     /**
-     * Retourne le winrate estimé d'un matchup.
-     * @param {string[]} colorsA - couleurs du deck A
-     * @param {string[]} colorsB - couleurs du deck B
-     * @returns {number|null} winrate de A contre B (0-100)
+     * Retourne les matchups pour un archétype donné.
      */
-    getMatchupWinrate(colorsA, colorsB) {
-        const nameA = [...colorsA].sort().join('/');
-        const archetypeA = this.archetypes.find(a => [...a.colors].sort().join('/') === nameA);
-        if (!archetypeA) return null;
-        const nameB = [...colorsB].sort().join('/');
-        return archetypeA.matchups[nameB] ?? null;
+    getMatchups(colors) {
+        const name = [...colors].sort().join('/');
+        return this.matchups.filter(m => m.archetypeA === name || m.archetypeB === name);
+    }
+
+    /**
+     * Retourne le winrate d'une carte spécifique.
+     */
+    getCardWinrate(fullName) {
+        const entry = this.cardWinrates.find(c => c.fullName === fullName);
+        return entry ? entry.winrate : null;
     }
 }
 
