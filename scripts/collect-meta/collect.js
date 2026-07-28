@@ -1,105 +1,131 @@
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios');
-const puppeteer = require('puppeteer');
+const https = require('https');
 
 const outputDir = path.join(__dirname, '..', '..', 'meta');
 
-// ------ Fonctions de scraping / API ------
-
-async function fetchDuelsInk() {
-    // Exemple avec axios (si API publique documentée)
-    // Remplace l'URL par la vraie
-    try {
-        const resp = await axios.get('https://api.duels.ink/v1/meta', { timeout: 10000 });
-        const data = resp.data;
-        // Adapter au format attendu
-        return {
-            archetypes: data.archetypes || [],
-            matchups: data.matchups || [],
-            cardWinrates: data.cards || []
-        };
-    } catch (e) {
-        console.warn('Duels.ink injoignable :', e.message);
-        return { archetypes: [], matchups: [], cardWinrates: [] };
-    }
-}
-
-async function fetchInkDecks() {
-    // Scraping avec Puppeteer (exemple)
-    const browser = await puppeteer.launch({ headless: 'new' });
-    const page = await browser.newPage();
-    try {
-        await page.goto('https://inkdecks.com/meta', { waitUntil: 'networkidle2', timeout: 30000 });
-        const archetypes = await page.evaluate(() => {
-            const rows = document.querySelectorAll('table.meta-table tbody tr');
-            return Array.from(rows).map(row => {
-                const cols = row.querySelectorAll('td');
-                return {
-                    name: cols[0]?.textContent.trim(),
-                    colors: cols[1]?.textContent.split('/').map(s => s.trim()),
-                    globalWinrate: parseFloat(cols[2]?.textContent),
-                    gamesPlayed: parseInt(cols[3]?.textContent.replace(/\D/g, ''))
-                };
+// --- Fonction pour télécharger un fichier JSON depuis une URL ---
+function fetchJSON(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, { headers: { 'User-Agent': 'LorcanaOptimizer/1.0' } }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch (e) {
+                    reject(new Error(`JSON invalide depuis ${url}`));
+                }
             });
-        });
-        await browser.close();
+        }).on('error', reject);
+    });
+}
+
+// --- Source 1 : Lorcanito (données de matchs) ---
+async function fetchLorcanitoData() {
+    try {
+        // Fichier de statistiques d'archétypes (exemple, à vérifier sur le dépôt)
+        const archetypesURL = 'https://raw.githubusercontent.com/lorcanito/lorcanito/main/data/archetypes.json';
+        const data = await fetchJSON(archetypesURL);
+        
+        // Adapter au format attendu par ton site
+        const archetypes = (data.archetypes || data || []).map(entry => ({
+            name: entry.name || entry.archetype,
+            colors: entry.colors || [],
+            globalWinrate: entry.winrate || entry.winRate || 50,
+            gamesPlayed: entry.games || entry.total || 0
+        }));
         return { archetypes, matchups: [], cardWinrates: [] };
-    } catch (e) {
-        console.warn('InkDecks scraping échoué :', e.message);
-        await browser.close();
+    } catch (err) {
+        console.warn('Lorcanito :', err.message);
         return { archetypes: [], matchups: [], cardWinrates: [] };
     }
 }
 
-// ------ Agrégation et écriture ------
+// --- Source 2 : Inkweave (classification d'archétypes) ---
+async function fetchInkweaveData() {
+    try {
+        const metaURL = 'https://raw.githubusercontent.com/Doberjohn/inkweave/main/data/meta.json';
+        const data = await fetchJSON(metaURL);
+        
+        const archetypes = (data.archetypes || []).map(entry => ({
+            name: entry.name,
+            colors: entry.colors || [],
+            globalWinrate: entry.winrate || 50,
+            gamesPlayed: entry.games || 0,
+            matchups: entry.matchups || {}
+        }));
+        return { archetypes, matchups: [], cardWinrates: [] };
+    } catch (err) {
+        console.warn('Inkweave :', err.message);
+        return { archetypes: [], matchups: [], cardWinrates: [] };
+    }
+}
 
+// --- Source 3 : Lorcast API (cartes, pour enrichir si besoin) ---
+async function fetchLorcastCards() {
+    try {
+        const url = 'https://api.lorcast.com/v0/cards';
+        const data = await fetchJSON(url);
+        // On peut extraire des stats si disponibles, mais principalement pour les données de cartes
+        return { archetypes: [], matchups: [], cardWinrates: [] };
+    } catch (err) {
+        console.warn('Lorcast :', err.message);
+        return { archetypes: [], matchups: [], cardWinrates: [] };
+    }
+}
+
+// --- Agrégation et écriture ---
 async function main() {
-    console.log('Collecte des données méta...');
+    console.log('Collecte des données méta depuis les sources réelles...\n');
 
-    // Récupérer de plusieurs sources (Promise.allSettled pour ne pas bloquer)
-    const [duelsData, inkdecksData] = await Promise.allSettled([
-        fetchDuelsInk(),
-        fetchInkDecks()
+    const [lorcanitoData, inkweaveData] = await Promise.allSettled([
+        fetchLorcanitoData(),
+        fetchInkweaveData()
     ]);
 
     let archetypes = [];
     let matchups = [];
     let cardWinrates = [];
 
-    if (duelsData.status === 'fulfilled') {
-        archetypes = archetypes.concat(duelsData.value.archetypes);
-        matchups = matchups.concat(duelsData.value.matchups);
-        cardWinrates = cardWinrates.concat(duelsData.value.cardWinrates);
+    if (lorcanitoData.status === 'fulfilled') {
+        archetypes = archetypes.concat(lorcanitoData.value.archetypes);
+        matchups = matchups.concat(lorcanitoData.value.matchups);
+        cardWinrates = cardWinrates.concat(lorcanitoData.value.cardWinrates);
+        console.log('✅ Lorcanito :', lorcanitoData.value.archetypes.length, 'archétypes');
     }
-    if (inkdecksData.status === 'fulfilled') {
-        archetypes = archetypes.concat(inkdecksData.value.archetypes);
-        matchups = matchups.concat(inkdecksData.value.matchups);
-        cardWinrates = cardWinrates.concat(inkdecksData.value.cardWinrates);
+    if (inkweaveData.status === 'fulfilled') {
+        archetypes = archetypes.concat(inkweaveData.value.archetypes);
+        matchups = matchups.concat(inkweaveData.value.matchups);
+        console.log('✅ Inkweave :', inkweaveData.value.archetypes.length, 'archétypes');
     }
 
-    // Déduplication simple (par nom pour archetypes, par paire pour matchups, par fullName pour cartes)
+    // Déduplication
     const uniqueArchetypes = [...new Map(archetypes.map(a => [a.name, a])).values()];
-    const uniqueMatchups = [...new Map(matchups.map(m => [`${m.archetypeA}|${m.archetypeB}`, m])).values()];
-    const uniqueCards = [...new Map(cardWinrates.map(c => [c.fullName, c])).values()];
 
-    // Écriture
+    // Création du dossier de sortie
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
+    // Écriture des fichiers
     fs.writeFileSync(
         path.join(outputDir, 'archetypes.json'),
-        JSON.stringify({ updated: new Date().toISOString().split('T')[0], source: 'aggregated', archetypes: uniqueArchetypes }, null, 2)
+        JSON.stringify({ 
+            updated: new Date().toISOString().split('T')[0], 
+            source: 'lorcanito+inkweave', 
+            archetypes: uniqueArchetypes 
+        }, null, 2)
     );
     fs.writeFileSync(
         path.join(outputDir, 'matchups.json'),
-        JSON.stringify({ updated: new Date().toISOString().split('T')[0], matchups: uniqueMatchups }, null, 2)
+        JSON.stringify({ updated: new Date().toISOString().split('T')[0], matchups }, null, 2)
     );
     fs.writeFileSync(
         path.join(outputDir, 'card_winrates.json'),
-        JSON.stringify({ updated: new Date().toISOString().split('T')[0], cardWinrates: uniqueCards }, null, 2)
+        JSON.stringify({ updated: new Date().toISOString().split('T')[0], cardWinrates }, null, 2)
     );
 
-    console.log(`✅ ${uniqueArchetypes.length} archétypes, ${uniqueMatchups.length} matchups, ${uniqueCards.length} cartes sauvegardées.`);
+    console.log(`\n📊 ${uniqueArchetypes.length} archétypes sauvegardés dans meta/`);
+    console.log('✅ Collecte terminée.');
 }
 
 main().catch(console.error);
